@@ -1,0 +1,10 @@
+--- .\meson.build.orig	Thu Dec 29 23:53:31 2022
++++ .\meson.build	Fri Dec 30 01:40:40 2022
+@@ -106,6 +106,7 @@ imgui = library(
+   gnu_symbol_visibility: 'hidden',
+   dependencies: dependencies,
+   include_directories: include_dirs,
++  install: true,
+ )
+ 
+ if host_machine.system() == 'windows'

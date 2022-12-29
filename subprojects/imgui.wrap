@@ -7,6 +7,7 @@ patch_filename = imgui_1.88-2_patch.zip
 patch_url = https://wrapdb.mesonbuild.com/v2/imgui_1.88-2/get_patch
 patch_hash = a6c222df21e02092925091a5328283bad07134e04693b038dd10affff0dd9328
 wrapdb_version = 1.88-2
+diff_files = imgui/meson.build.patch
 
 [provide]
 imgui = imgui_dep

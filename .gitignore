@@ -4,3 +4,5 @@
 /subprojects/*
 !/subprojects/glfw.wrap
 !/subprojects/imgui.wrap
+!/subprojects/packagefiles
+imgui.ini
