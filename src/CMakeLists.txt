@@ -1,6 +1,0 @@
-set(TARGET_NAME glfwterm)
-add_executable(${TARGET_NAME} main.cpp)
-target_link_libraries(${TARGET_NAME} PRIVATE glfw)
-if(WIN32)
-  target_link_libraries(${TARGET_NAME} PRIVATE OpenGL32)
-endif()

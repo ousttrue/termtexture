@@ -8,7 +8,7 @@
             "type": "lldb",
             "request": "launch",
             "name": "Debug",
-            "program": "${workspaceFolder}/build/Debug/bin/glfwterm.exe",
+            "program": "${workspaceFolder}/prefix/bin/glfwterm.exe",
             "args": [],
             "cwd": "${workspaceFolder}"
         }

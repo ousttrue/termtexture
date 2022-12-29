@@ -1,1 +1,6 @@
-/build/
+/builddir/
+/prefix/
+/.cache/
+/subprojects/*
+!/subprojects/glfw.wrap
+!/subprojects/imgui.wrap
