@@ -1,3 +1,4 @@
+#include "texture.h"
 #include <GL/glew.h>
 #include <gui_widgets.h>
 #include <imgui.h>
@@ -67,71 +68,15 @@ void fbo_window::operator()(bool *p_open) {
   ImGui::PopStyleVar();
 }
 
-class Texture {
-  int width_;
-  int height_;
-  // GL_RGBA(32bit) or GL_RED(8bit graysclale)
-  int pixel_type_;
-  GLuint handle_;
-
-public:
-  Texture(int width, int height, const uint8_t *data = nullptr,
-          int pixel_type = GL_RGBA)
-      : width_(width), height_(height), pixel_type_(pixel_type) {
-    glGenTextures(1, &handle_);
-    // logger.debug(f'Texture: {self.handle}')
-
-    Bind();
-
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    // glPixelStorei(GL_UNPACK_ROW_LENGTH, width)
-    glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
-    glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
-
-    glTexImage2D(GL_TEXTURE_2D, 0, pixel_type_, width_, height_, 0, pixel_type_,
-                 GL_UNSIGNED_BYTE, data);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    Unbind();
-  }
-
-  ~Texture() {
-    // logger.debug(f'{self.handle}')
-    glDeleteTextures(1, &handle_);
-  }
-  GLuint Handle() const { return handle_; }
-  int Width() const { return width_; }
-  int Height() const { return height_; }
-  void update(int x, int y, int w, int h, const uint8_t *data) {
-    Bind();
-
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, width_);
-    glPixelStorei(GL_UNPACK_SKIP_PIXELS, x);
-    glPixelStorei(GL_UNPACK_SKIP_ROWS, y);
-
-    glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, w, h, pixel_type_, GL_UNSIGNED_BYTE,
-                    data);
-
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-    glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
-    glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
-
-    Unbind();
-  }
-  void Bind() { glBindTexture(GL_TEXTURE_2D, handle_); }
-  void Unbind() { glBindTexture(GL_TEXTURE_2D, 0); }
-};
-
 class Fbo {
-  Texture texture_;
+  glo::Texture texture_;
   GLuint fbo_ = 0;
   GLuint depth_ = 0;
 
 public:
-  Texture *Texture() { return &texture_; }
-  Fbo(int width, int height, bool use_depth = true) : texture_(width, height) {
+  glo::Texture *Texture() { return &texture_; }
+  Fbo(int width, int height, bool use_depth = true)
+      : texture_(width, height, GL_RGBA) {
     glGenFramebuffers(1, &fbo_);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo_);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
