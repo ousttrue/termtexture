@@ -3,6 +3,9 @@
 
 namespace glo {
 
+//
+// Fbo
+//
 Fbo::Fbo(int width, int height, bool use_depth)
     : texture_(width, height, GL_RGBA) {
   glGenFramebuffers(1, &fbo_);
@@ -33,5 +36,37 @@ Fbo::~Fbo() {
 void Fbo::Bind() { glBindFramebuffer(GL_FRAMEBUFFER, fbo_); }
 
 void Fbo::Unbind() { glBindFramebuffer(GL_FRAMEBUFFER, 0); }
+
+//
+// FboRenderer
+//
+FboRenderer::FboRenderer() {}
+FboRenderer::~FboRenderer() {}
+GLuint FboRenderer::Begin(int width, int height, const float color[4]) {
+  if (width == 0 || height == 0) {
+    return 0;
+  }
+
+  if (fbo_) {
+    if (fbo_->Texture()->Width() != width ||
+        fbo_->Texture()->Height() != height) {
+      fbo_ = nullptr;
+    }
+  }
+  if (!fbo_) {
+    fbo_ = std::make_shared<glo::Fbo>(width, height);
+  }
+
+  fbo_->Bind();
+  glViewport(0, 0, width, height);
+  glScissor(0, 0, width, height);
+  glClearColor(color[0] * color[3], color[1] * color[3], color[2] * color[3],
+               color[3]);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glClearDepth(1.0);
+  glDepthFunc(GL_LESS);
+  return fbo_->Texture()->Handle();
+}
+void FboRenderer::End() { fbo_->Unbind(); }
 
 } // namespace glo

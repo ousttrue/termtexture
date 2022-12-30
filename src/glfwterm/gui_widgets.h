@@ -1,4 +1,5 @@
 #pragma once
+#include "fbo.h"
 #include <functional>
 #include <imgui.h>
 #include <memory>
@@ -12,8 +13,12 @@ struct simple_window {
   void operator()(bool *p_open);
 };
 
+namespace glo {
+  class FboRenderer;
+}
+
 struct fbo_window {
-  std::shared_ptr<class FboRenderer> fbo_;
+  std::shared_ptr<class glo::FboRenderer> fbo_;
   ImVec4 bg_ = {1, 1, 1, 1};
   ImVec4 tint_ = {1, 1, 1, 1};
   float clear_color_[4] = {0.3f, 0.2f, 0.1f, 1.0f};

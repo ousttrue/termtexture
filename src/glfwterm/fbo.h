@@ -1,5 +1,6 @@
 #pragma once
 #include "texture.h"
+#include <memory>
 
 namespace glo {
 class Fbo {
@@ -13,6 +14,16 @@ public:
   glo::Texture *Texture() { return &texture_; }
   void Bind();
   void Unbind();
+};
+
+class FboRenderer {
+  std::shared_ptr<glo::Fbo> fbo_;
+
+public:
+  FboRenderer();
+  ~FboRenderer();
+  uint32_t Begin(int width, int height, const float color[4]);
+  void End();
 };
 
 } // namespace glo

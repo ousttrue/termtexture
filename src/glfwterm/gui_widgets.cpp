@@ -68,42 +68,8 @@ void fbo_window::operator()(bool *p_open) {
   ImGui::PopStyleVar();
 }
 
-class FboRenderer {
-  std::shared_ptr<glo::Fbo> fbo_;
-
-public:
-  FboRenderer() {}
-  ~FboRenderer() {}
-  GLuint Begin(int width, int height, const float color[4]) {
-    if (width == 0 || height == 0) {
-      return 0;
-    }
-
-    if (fbo_) {
-      if (fbo_->Texture()->Width() != width ||
-          fbo_->Texture()->Height() != height) {
-        fbo_ = nullptr;
-      }
-    }
-    if (!fbo_) {
-      fbo_ = std::make_shared<glo::Fbo>(width, height);
-    }
-
-    fbo_->Bind();
-    glViewport(0, 0, width, height);
-    glScissor(0, 0, width, height);
-    glClearColor(color[0] * color[3], color[1] * color[3], color[2] * color[3],
-                 color[3]);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glClearDepth(1.0);
-    glDepthFunc(GL_LESS);
-    return fbo_->Texture()->Handle();
-  }
-  void End() { fbo_->Unbind(); }
-};
-
 fbo_window::fbo_window(const std::function<void()> &render)
-    : fbo_(new FboRenderer), render_(render) {}
+    : fbo_(new glo::FboRenderer), render_(render) {}
 
 void fbo_window::show_fbo(float x, float y, float w, float h) {
   assert(w);
