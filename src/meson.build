@@ -7,6 +7,8 @@ executable('glfwterm', [
     'main.cpp',
     'glfw_window.cpp',
     'gui.cpp',
+    'gui_widgets.cpp',
+    'scene.cpp',
 ],
 install: true,
 dependencies: [glfw3_dep, imgui_dep, gl_dep, glew_dep]
