@@ -1,6 +1,8 @@
 #include "scene.h"
+#include "plog/Log.h"
 #include <GL/glew.h>
 #include <memory>
+#include <plog/Logger.h>
 
 static const struct {
   float x, y;
@@ -44,6 +46,9 @@ public:
   TriangleImpl(const TriangleImpl &) = delete;
   TriangleImpl &operator=(const TriangleImpl &) = delete;
   TriangleImpl() {
+    glewInit();
+    PLOG_INFO << "GLEW_VERSION: " << glewGetString(GLEW_VERSION);
+
     glGenBuffers(1, &vertex_buffer);
     vertex_shader = glCreateShader(GL_VERTEX_SHADER);
     fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);

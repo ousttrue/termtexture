@@ -1,1 +1,2 @@
+subdir('glo')
 subdir('glfwterm')

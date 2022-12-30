@@ -1,6 +1,5 @@
 #include "glfw_window.h"
 #include "gui.h"
-#include <GL/glew.h>
 #include <plog/Appenders/ColorConsoleAppender.h>
 #include <plog/Formatters/TxtFormatter.h>
 #include <plog/Init.h>
@@ -51,7 +50,6 @@ int main(int, char **) {
   if (!window_handle) {
     return 1;
   }
-  glewInit();
 
   Gui gui(window_handle, window.glsl_version());
 

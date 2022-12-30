@@ -1,5 +1,4 @@
 #include "fbo.h"
-#include <GL/glew.h>
 #include <gui_widgets.h>
 #include <imgui.h>
 #include <imgui_internal.h>
