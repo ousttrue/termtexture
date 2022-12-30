@@ -1,5 +1,7 @@
 #include "glfw_window.h"
+#include "plog/Log.h"
 #include <GLFW/glfw3.h> // Will drag system OpenGL headers
+#include <plog/Logger.h>
 #include <stdexcept>
 
 static void glfw_error_callback(int error, const char *description) {
@@ -51,9 +53,9 @@ GLFWwindow *Window::CreaeWindow(int width, int height, const char *title) {
 
   glfwMakeContextCurrent(window_);
 
-  printf("GL_VERSION: %s\n", glGetString(GL_VERSION));
-  printf("GL_VENDOR: %s\n", glGetString(GL_VENDOR));
-  printf("GL_RENDERER: %s\n", glGetString(GL_RENDERER));
+  PLOG_INFO << "GL_VERSION: " << glGetString(GL_VERSION);
+  PLOG_INFO << "GL_VENDOR: " << glGetString(GL_VENDOR);
+  PLOG_INFO << "GL_RENDERER: " << glGetString(GL_RENDERER);
 
   glfwSwapInterval(1); // Enable vsync
 
