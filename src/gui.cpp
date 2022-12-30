@@ -81,6 +81,11 @@ Gui::Gui(GLFWwindow *window, std::string_view glsl_version) {
                               .clear_color = clear_color,
                           },
                       .use_show = false});
+
+  windows_.push_back({
+      .on_updated = fbo_window{},
+      .use_show = false,
+  });
 }
 
 Gui::~Gui() {
