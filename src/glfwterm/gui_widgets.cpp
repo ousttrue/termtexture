@@ -1,4 +1,4 @@
-#include "texture.h"
+#include "fbo.h"
 #include <GL/glew.h>
 #include <gui_widgets.h>
 #include <imgui.h>
@@ -68,44 +68,8 @@ void fbo_window::operator()(bool *p_open) {
   ImGui::PopStyleVar();
 }
 
-class Fbo {
-  glo::Texture texture_;
-  GLuint fbo_ = 0;
-  GLuint depth_ = 0;
-
-public:
-  glo::Texture *Texture() { return &texture_; }
-  Fbo(int width, int height, bool use_depth = true)
-      : texture_(width, height, GL_RGBA) {
-    glGenFramebuffers(1, &fbo_);
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo_);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-                           texture_.Handle(), 0);
-    unsigned int buf = GL_COLOR_ATTACHMENT0;
-    glDrawBuffers(1, &buf);
-
-    if (use_depth) {
-      glGenRenderbuffers(1, &depth_);
-      glBindRenderbuffer(GL_RENDERBUFFER, depth_);
-      glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
-      glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-                                GL_RENDERBUFFER, depth_);
-    }
-
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    // LOGGER.debug(f'fbo: {self.fbo}, texture: {self.texture}, depth:
-    // {self.depth}')
-  }
-  ~Fbo() {
-    // LOGGER.debug(f'fbo: {self.fbo}')
-    glDeleteFramebuffers(1, &fbo_);
-  }
-  void Bind() { glBindFramebuffer(GL_FRAMEBUFFER, fbo_); }
-  void Unbind() { glBindFramebuffer(GL_FRAMEBUFFER, 0); }
-};
-
 class FboRenderer {
-  std::shared_ptr<Fbo> fbo_;
+  std::shared_ptr<glo::Fbo> fbo_;
 
 public:
   FboRenderer() {}
@@ -122,7 +86,7 @@ public:
       }
     }
     if (!fbo_) {
-      fbo_ = std::make_shared<Fbo>(width, height);
+      fbo_ = std::make_shared<glo::Fbo>(width, height);
     }
 
     fbo_->Bind();

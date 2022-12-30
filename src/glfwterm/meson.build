@@ -11,6 +11,7 @@ executable('glfwterm', [
     'gui_widgets.cpp',
     'scene.cpp',
     'texture.cpp',
+    'fbo.cpp',
 ],
 install: true,
 dependencies: [glfw3_dep, imgui_dep, gl_dep, glew_dep, plog_dep]
