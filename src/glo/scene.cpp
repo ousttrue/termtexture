@@ -31,7 +31,7 @@ void main()
 }
 )";
 
-namespace scene {
+namespace glo {
 
 class TriangleImpl {
   GLuint vertex_buffer = 0;

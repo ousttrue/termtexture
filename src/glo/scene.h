@@ -1,6 +1,6 @@
 #pragma once
 
-namespace scene {
+namespace glo {
 
 class Triangle {
   class TriangleImpl *impl_ = nullptr;

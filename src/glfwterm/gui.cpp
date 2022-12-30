@@ -84,7 +84,7 @@ Gui::Gui(GLFWwindow *window, std::string_view glsl_version) {
                           },
                       .use_show = false});
 
-  auto triangle = std::make_shared<scene::Triangle>();
+  auto triangle = std::make_shared<glo::Triangle>();
   if(!triangle->Load())
   {
     throw std::runtime_error("Triangle::Load");
