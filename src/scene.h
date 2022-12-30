@@ -1,7 +1,17 @@
 #pragma once
 
 namespace scene {
-bool Initialize();
-void Render();
-void Finalize();
+
+class Triangle {
+  class TriangleImpl *impl_ = nullptr;
+
+public:
+  Triangle(const Triangle &) = delete;
+  Triangle &operator=(const Triangle &) = delete;
+  Triangle();
+  ~Triangle();
+  bool Load();
+  void Render();
+};
+
 } // namespace scene

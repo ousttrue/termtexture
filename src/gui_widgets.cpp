@@ -193,23 +193,23 @@ public:
   void End() { fbo_->Unbind(); }
 };
 
-fbo_window::fbo_window() : fbo_(new FboRenderer) {}
+fbo_window::fbo_window(const std::function<void()> &render)
+    : fbo_(new FboRenderer), render_(render) {}
 
 void fbo_window::show_fbo(float x, float y, float w, float h) {
   assert(w);
   assert(h);
   auto texture =
-      fbo_->Begin(static_cast<int>(w), static_cast<int>(h), clear_color);
+      fbo_->Begin(static_cast<int>(w), static_cast<int>(h), clear_color_);
   if (texture) {
     ImGui::ImageButton(reinterpret_cast<ImTextureID>(texture), {w, h}, {0, 1},
-                       {1, 0}, 0, bg, tint);
+                       {1, 0}, 0, bg_, tint_);
     ImGui::ButtonBehavior(ImGui::GetCurrentContext()->LastItemData.Rect,
                           ImGui::GetCurrentContext()->LastItemData.ID, 0, 0,
                           ImGuiButtonFlags_MouseButtonMiddle |
                               ImGuiButtonFlags_MouseButtonRight);
 
     // auto &io = ImGui::GetIO();
-
     // mouse_input = MouseInput(
     //     (int(io.MousePos.x) - x), (int(io.MousePos.y) - y),
     //     w, h,
@@ -217,10 +217,9 @@ void fbo_window::show_fbo(float x, float y, float w, float h) {
     //     ImGui.IsItemActive(), ImGui.IsItemHovered(), int(io.MouseWheel))
     // self.mouse_event.process(mouse_input)
 
-    // if self.render:
-    //     self.render(mouse_input)
-    // else:
-    //     self.mouse_event.debug_draw()
+    if (render_) {
+      render_();
+    }
 
     fbo_->End();
   }

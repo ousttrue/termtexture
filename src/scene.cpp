@@ -29,7 +29,9 @@ void main()
 }
 )";
 
-class Triangle {
+namespace scene {
+
+class TriangleImpl {
   GLuint vertex_buffer = 0;
   GLuint vertex_shader = 0;
   GLuint fragment_shader = 0;
@@ -39,15 +41,15 @@ class Triangle {
   GLint vcol_location = -1;
 
 public:
-  Triangle(const Triangle &) = delete;
-  Triangle &operator=(const Triangle &) = delete;
-  Triangle() {
+  TriangleImpl(const TriangleImpl &) = delete;
+  TriangleImpl &operator=(const TriangleImpl &) = delete;
+  TriangleImpl() {
     glGenBuffers(1, &vertex_buffer);
     vertex_shader = glCreateShader(GL_VERTEX_SHADER);
     fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
     program = glCreateProgram();
   }
-  ~Triangle() {}
+  ~TriangleImpl() {}
 
   bool Load() {
     glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
@@ -88,13 +90,9 @@ public:
   }
 };
 
-std::shared_ptr<Triangle> g_triangle;
+Triangle::Triangle() : impl_(new TriangleImpl) {}
+Triangle::~Triangle() { delete impl_; }
+bool Triangle::Load() { return impl_->Load(); }
+void Triangle::Render() { impl_->Render(); }
 
-namespace scene {
-bool Initialize() {
-  g_triangle = std::make_shared<Triangle>();
-  return g_triangle->Load();
-}
-void Render() { g_triangle->Render(); }
-void Finalize() { g_triangle.reset(); }
 } // namespace scene

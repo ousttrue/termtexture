@@ -1,8 +1,10 @@
 #include "gui.h"
 #include "gui_widgets.h"
+#include "scene.h"
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
+#include <stdexcept>
 #include <stdio.h>
 #if defined(IMGUI_IMPL_OPENGL_ES2)
 #include <GLES2/gl2.h>
@@ -82,10 +84,14 @@ Gui::Gui(GLFWwindow *window, std::string_view glsl_version) {
                           },
                       .use_show = false});
 
-  windows_.push_back({
-      .on_updated = fbo_window{},
-      .use_show = false,
-  });
+  auto triangle = std::make_shared<scene::Triangle>();
+  if(!triangle->Load())
+  {
+    throw std::runtime_error("Triangle::Load");
+  }
+  windows_.push_back(
+      {.on_updated = fbo_window([triangle]() { triangle->Render(); }),
+       .use_show = false});
 }
 
 Gui::~Gui() {
