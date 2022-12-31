@@ -6,5 +6,6 @@
 !/subprojects/imgui.wrap
 !/subprojects/glew.wrap
 !/subprojects/plog.wrap
+!/subprojects/glslang.wrap
 !/subprojects/packagefiles
 imgui.ini

@@ -15,20 +15,20 @@ static const struct {
                  {0.6f, -0.4f, 0.f, 1.f, 0.f},
                  {0.f, 0.6f, 0.f, 0.f, 1.f}};
 
-static const char *vertex_shader_text = R"(#version 110
-uniform mat4 MVP;
-attribute vec3 vCol;
-attribute vec2 vPos;
-varying vec3 color;
+static const char *vertex_shader_text = R"(#version 140
+// uniform mat4 MVP;
+layout (location = 0) in vec3 vCol;
+layout (location = 1) in vec2 vPos;
+out vec3 color;
 void main()
 {
-    gl_Position = MVP * vec4(vPos, 0.0, 1.0);
+    gl_Position = vec4(vPos, 0.0, 1.0);
     color = vCol;
 }
 )";
 
-static const char *fragment_shader_text = R"(#version 110
-varying vec3 color;
+static const char *fragment_shader_text = R"(#version 140
+in vec3 color;
 void main()
 {
     gl_FragColor = vec4(color, 1.0);
@@ -89,13 +89,13 @@ public:
   void Render() {
     auto vao_bind = ScopedBind(vao_);
     auto shader_bind = ScopedBind(shader_);
-    float mvp[16] = {
-        1, 0, 0, 0, //
-        0, 1, 0, 0, //
-        0, 0, 1, 0, //
-        0, 0, 0, 1, //
-    };
-    shader_->SetUniformMatrix("MVP", mvp);
+    // float mvp[16] = {
+    //     1, 0, 0, 0, //
+    //     0, 1, 0, 0, //
+    //     0, 0, 1, 0, //
+    //     0, 0, 0, 1, //
+    // };
+    // shader_->SetUniformMatrix("MVP", mvp);
     glDrawArrays(GL_TRIANGLES, 0, 3);
   }
 };

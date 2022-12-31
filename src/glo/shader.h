@@ -4,8 +4,11 @@
 #include <stdint.h>
 
 namespace glo {
+
 class ShaderCompile {
 
+  // GL_VERTEX_SHADER, GL_FRAGMENT_SHADER
+  int shader_type_;
   ShaderCompile(int shader_type);
 
 public:

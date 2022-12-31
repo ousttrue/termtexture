@@ -1,0 +1,9 @@
+[wrap-file]
+directory = glslang
+source_url = https://github.com/KhronosGroup/glslang/releases/download/master-tot/glslang-master-windows-x64-Release.zip
+source_filename = glslang-master-windows-x64-Release.zip
+source_hash = eefce74bae3f9e5b6ec158a56d67a478210b79ec09b35aab715735160f534bdb
+patch_directory = glslang
+
+[provide]
+glslang = glslang_dep
