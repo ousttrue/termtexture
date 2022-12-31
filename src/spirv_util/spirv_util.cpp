@@ -43,6 +43,11 @@ struct SpirvCompiler {
 
   const unsigned int *compile(const char *src, unsigned int *out_size) {
     shader_.setStrings(&src, 1);
+
+    shader_.setEnvClient(glslang::EShClientOpenGL,
+                         glslang::EShTargetOpenGL_450);
+    shader_.setEnvTarget(glslang::EShTargetSpv, glslang::EShTargetSpv_1_0);
+
     EShMessages messages = (EShMessages)(EShMsgSpvRules | EShMsgVulkanRules);
     if (!shader_.parse(GetDefaultResources(), 100, false, messages)) {
       return nullptr;

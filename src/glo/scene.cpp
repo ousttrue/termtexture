@@ -15,11 +15,11 @@ static const struct {
                  {0.6f, -0.4f, 0.f, 1.f, 0.f},
                  {0.f, 0.6f, 0.f, 0.f, 1.f}};
 
-static const char *vertex_shader_text = R"(#version 140
+static const char *vertex_shader_text = R"(#version 450
 // uniform mat4 MVP;
 layout (location = 0) in vec3 vCol;
 layout (location = 1) in vec2 vPos;
-out vec3 color;
+layout (location = 0) out vec3 color;
 void main()
 {
     gl_Position = vec4(vPos, 0.0, 1.0);
@@ -27,11 +27,12 @@ void main()
 }
 )";
 
-static const char *fragment_shader_text = R"(#version 140
-in vec3 color;
+static const char *fragment_shader_text = R"(#version 450
+layout (location = 0) in vec3 color;
+layout (location = 0) out vec4 uFragColor;
 void main()
 {
-    gl_FragColor = vec4(color, 1.0);
+    uFragColor = vec4(color, 1.0);
 }
 )";
 
