@@ -1,9 +1,12 @@
 #include "scene.h"
+#include "scoped_binder.h"
+#include "shader.h"
 #include "vbo.h"
 #include <GL/glew.h>
 #include <memory>
+#include <optional>
 #include <plog/Log.h>
-#include <plog/Logger.h>
+#include <stdint.h>
 
 static const struct {
   float x, y;
@@ -36,12 +39,9 @@ namespace glo {
 
 class TriangleImpl {
   std::shared_ptr<VBO> vbo_;
-  GLuint vertex_shader = 0;
-  GLuint fragment_shader = 0;
-  GLuint program = 0;
-  GLint mvp_location = -1;
-  GLint vpos_location = -1;
-  GLint vcol_location = -1;
+  std::shared_ptr<ShaderProgram> shader_;
+  std::shared_ptr<ShaderCompile> vs;
+  std::shared_ptr<ShaderCompile> fs;
 
 public:
   TriangleImpl(const TriangleImpl &) = delete;
@@ -49,50 +49,54 @@ public:
   TriangleImpl() {
     glewInit();
     PLOG_INFO << "GLEW_VERSION: " << glewGetString(GLEW_VERSION);
-
-    vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-    fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-    program = glCreateProgram();
   }
   ~TriangleImpl() {}
 
   bool Load() {
-    vbo_ = VBO::Create(vertices, sizeof(vertices));
-
     // shader
-    glShaderSource(vertex_shader, 1, &vertex_shader_text, NULL);
-    glCompileShader(vertex_shader);
-    glShaderSource(fragment_shader, 1, &fragment_shader_text, NULL);
-    glCompileShader(fragment_shader);
-    glAttachShader(program, vertex_shader);
-    glAttachShader(program, fragment_shader);
-    glLinkProgram(program);
-    mvp_location = glGetUniformLocation(program, "MVP");
-    vpos_location = glGetAttribLocation(program, "vPos");
-    vcol_location = glGetAttribLocation(program, "vCol");
+    vs = ShaderCompile::VertexShader();
+    if (!vs->Compile(vertex_shader_text)) {
+      return false;
+    }
+    fs = ShaderCompile::FragmentShader();
+    if (!fs->Compile(fragment_shader_text)) {
+      return false;
+    }
+    shader_ = ShaderProgram::Create();
+    if (!shader_->Link(vs->shader_, fs->shader_)) {
+      return false;
+    }
+
+    // vertex buffer
+    vbo_ = VBO::Create(vertices, sizeof(vertices));
 
     return true;
   }
 
   void Render() {
-    glUseProgram(program);
-    vbo_->Bind();
-    glEnableVertexAttribArray(vpos_location);
-    glVertexAttribPointer(vpos_location, 2, GL_FLOAT, GL_FALSE,
-                          sizeof(vertices[0]), (void *)0);
-    glEnableVertexAttribArray(vcol_location);
-    glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE,
-                          sizeof(vertices[0]), (void *)(sizeof(float) * 2));
+    auto vbo_bind = ScopedBind(vbo_);
 
+    if (auto vpos_location = shader_->AttributeLocation("vPos")) {
+      glEnableVertexAttribArray(vpos_location.value());
+      glVertexAttribPointer(vpos_location.value(), 2, GL_FLOAT, GL_FALSE,
+                            sizeof(vertices[0]), (void *)0);
+    }
+    if (auto vcol_location = shader_->AttributeLocation("vCol")) {
+      glEnableVertexAttribArray(vcol_location.value());
+      glVertexAttribPointer(vcol_location.value(), 3, GL_FLOAT, GL_FALSE,
+                            sizeof(vertices[0]), (void *)(sizeof(float) * 2));
+    }
+
+    auto shader_bind = ScopedBind(shader_);
     float mvp[16] = {
         1, 0, 0, 0, //
         0, 1, 0, 0, //
         0, 0, 1, 0, //
         0, 0, 0, 1, //
     };
-    glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat *)mvp);
+    shader_->SetUniformMatrix("MVP", mvp);
+
     glDrawArrays(GL_TRIANGLES, 0, 3);
-    vbo_->Unbind();
   }
 };
 

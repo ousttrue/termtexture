@@ -4,6 +4,7 @@ glo_lib = static_library('glo', [
     'texture.cpp',
     'fbo.cpp',
     'vbo.cpp',
+    'shader.cpp',
 ],
 dependencies: [glew_dep, plog_dep])
 glo_dep = declare_dependency(
