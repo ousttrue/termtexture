@@ -1,7 +1,8 @@
 #include "scene.h"
-#include "plog/Log.h"
+#include "vbo.h"
 #include <GL/glew.h>
 #include <memory>
+#include <plog/Log.h>
 #include <plog/Logger.h>
 
 static const struct {
@@ -34,7 +35,7 @@ void main()
 namespace glo {
 
 class TriangleImpl {
-  GLuint vertex_buffer = 0;
+  std::shared_ptr<VBO> vbo_;
   GLuint vertex_shader = 0;
   GLuint fragment_shader = 0;
   GLuint program = 0;
@@ -49,7 +50,6 @@ public:
     glewInit();
     PLOG_INFO << "GLEW_VERSION: " << glewGetString(GLEW_VERSION);
 
-    glGenBuffers(1, &vertex_buffer);
     vertex_shader = glCreateShader(GL_VERTEX_SHADER);
     fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
     program = glCreateProgram();
@@ -57,9 +57,9 @@ public:
   ~TriangleImpl() {}
 
   bool Load() {
-    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    vbo_ = VBO::Create(vertices, sizeof(vertices));
 
+    // shader
     glShaderSource(vertex_shader, 1, &vertex_shader_text, NULL);
     glCompileShader(vertex_shader);
     glShaderSource(fragment_shader, 1, &fragment_shader_text, NULL);
@@ -67,7 +67,6 @@ public:
     glAttachShader(program, vertex_shader);
     glAttachShader(program, fragment_shader);
     glLinkProgram(program);
-
     mvp_location = glGetUniformLocation(program, "MVP");
     vpos_location = glGetAttribLocation(program, "vPos");
     vcol_location = glGetAttribLocation(program, "vCol");
@@ -77,6 +76,7 @@ public:
 
   void Render() {
     glUseProgram(program);
+    vbo_->Bind();
     glEnableVertexAttribArray(vpos_location);
     glVertexAttribPointer(vpos_location, 2, GL_FLOAT, GL_FALSE,
                           sizeof(vertices[0]), (void *)0);
@@ -92,6 +92,7 @@ public:
     };
     glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat *)mvp);
     glDrawArrays(GL_TRIANGLES, 0, 3);
+    vbo_->Unbind();
   }
 };
 
@@ -100,4 +101,4 @@ Triangle::~Triangle() { delete impl_; }
 bool Triangle::Load() { return impl_->Load(); }
 void Triangle::Render() { impl_->Render(); }
 
-} // namespace scene
+} // namespace glo
