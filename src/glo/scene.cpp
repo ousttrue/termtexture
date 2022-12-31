@@ -38,10 +38,8 @@ void main()
 namespace glo {
 
 class TriangleImpl {
-  std::shared_ptr<VBO> vbo_;
+  std::shared_ptr<VAO> vao_;
   std::shared_ptr<ShaderProgram> shader_;
-  std::shared_ptr<ShaderCompile> vs;
-  std::shared_ptr<ShaderCompile> fs;
 
 public:
   TriangleImpl(const TriangleImpl &) = delete;
@@ -54,11 +52,11 @@ public:
 
   bool Load() {
     // shader
-    vs = ShaderCompile::VertexShader();
+    auto vs = ShaderCompile::VertexShader();
     if (!vs->Compile(vertex_shader_text)) {
       return false;
     }
-    fs = ShaderCompile::FragmentShader();
+    auto fs = ShaderCompile::FragmentShader();
     if (!fs->Compile(fragment_shader_text)) {
       return false;
     }
@@ -68,25 +66,28 @@ public:
     }
 
     // vertex buffer
-    vbo_ = VBO::Create(vertices, sizeof(vertices));
+    auto vbo = VBO::Create(vertices, sizeof(vertices));
+    vao_ = VAO::Create(vbo);
+    {
+      auto vao_bind = ScopedBind(vao_);
+      auto vbo_bind = ScopedBind(vbo);
+      if (auto vpos_location = shader_->AttributeLocation("vPos")) {
+        glEnableVertexAttribArray(vpos_location.value());
+        glVertexAttribPointer(vpos_location.value(), 2, GL_FLOAT, GL_FALSE,
+                              sizeof(vertices[0]), (void *)0);
+      }
+      if (auto vcol_location = shader_->AttributeLocation("vCol")) {
+        glEnableVertexAttribArray(vcol_location.value());
+        glVertexAttribPointer(vcol_location.value(), 3, GL_FLOAT, GL_FALSE,
+                              sizeof(vertices[0]), (void *)(sizeof(float) * 2));
+      }
+    }
 
     return true;
   }
 
   void Render() {
-    auto vbo_bind = ScopedBind(vbo_);
-
-    if (auto vpos_location = shader_->AttributeLocation("vPos")) {
-      glEnableVertexAttribArray(vpos_location.value());
-      glVertexAttribPointer(vpos_location.value(), 2, GL_FLOAT, GL_FALSE,
-                            sizeof(vertices[0]), (void *)0);
-    }
-    if (auto vcol_location = shader_->AttributeLocation("vCol")) {
-      glEnableVertexAttribArray(vcol_location.value());
-      glVertexAttribPointer(vcol_location.value(), 3, GL_FLOAT, GL_FALSE,
-                            sizeof(vertices[0]), (void *)(sizeof(float) * 2));
-    }
-
+    auto vao_bind = ScopedBind(vao_);
     auto shader_bind = ScopedBind(shader_);
     float mvp[16] = {
         1, 0, 0, 0, //
@@ -95,7 +96,6 @@ public:
         0, 0, 0, 1, //
     };
     shader_->SetUniformMatrix("MVP", mvp);
-
     glDrawArrays(GL_TRIANGLES, 0, 3);
   }
 };

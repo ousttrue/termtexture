@@ -17,4 +17,19 @@ public:
   void Unbind();
 };
 
+class VAO {
+  uint32_t vao_ = 0;
+  std::shared_ptr<VBO> vbo_;
+  VAO(const std::shared_ptr<VBO> &vbo);
+
+public:
+  ~VAO();
+  VAO(const VAO &) = delete;
+  VAO &operator=(const VAO &) = delete;
+  static std::shared_ptr<VAO> Create(const std::shared_ptr<VBO> vbo);
+  void Bind();
+  void Unbind();
+  void Draw(int topology, int offset, int count);
+};
+
 } // namespace glo
