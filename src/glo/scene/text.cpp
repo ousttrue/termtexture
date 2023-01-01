@@ -9,6 +9,10 @@
 #include <gl/glew.h>
 #include <memory>
 
+#define STB_TRUETYPE_IMPLEMENTATION
+#define STBTT_STATIC
+#include <stb_truetype.h>
+
 auto vs_src = R"(#version 420
 in vec3 i_Pos;
 in vec3 i_Color;
