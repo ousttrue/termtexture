@@ -1,4 +1,4 @@
-#include "scene.h"
+#include "triangle.h"
 #include "scoped_binder.h"
 #include "shader.h"
 #include "vbo.h"

@@ -1,11 +1,11 @@
 #include "gui.h"
 #include "gui_widgets.h"
-#include "scene.h"
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 #include <stdexcept>
 #include <stdio.h>
+#include <triangle.h>
 #if defined(IMGUI_IMPL_OPENGL_ES2)
 #include <GLES2/gl2.h>
 #endif
@@ -85,8 +85,7 @@ Gui::Gui(GLFWwindow *window, std::string_view glsl_version) {
                       .use_show = false});
 
   auto triangle = std::make_shared<glo::Triangle>();
-  if(!triangle->Load())
-  {
+  if (!triangle->Load()) {
     throw std::runtime_error("Triangle::Load");
   }
   windows_.push_back(
