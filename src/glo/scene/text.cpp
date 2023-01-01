@@ -123,25 +123,12 @@ namespace glo {
 
 const auto GLYPH_COUNT = 95;
 
-class FontAtlas {
+struct FontAtlas {
 
-  stbtt_packedchar glyphs[GLYPH_COUNT];
   float ascents[GLYPH_COUNT];
   float descents[GLYPH_COUNT];
   float linegaps[GLYPH_COUNT];
-
-public:
-  // pub fn new(allocator: std.mem.Allocator) *Self {
-  //     var self = allocator.create(Self) catch unreachable;
-  //     self.* = Self{
-  //         .allocator = allocator,
-  //     };
-  //     return self;
-  // }
-
-  // pub fn delete(self: *Self) void {
-  //     self.allocator.destroy(self);
-  // }
+  stbtt_packedchar glyphs[GLYPH_COUNT];
 
   // pub fn glyphIndexFromCodePoint(self: Self, c: u16) usize {
   //     _ = self;
@@ -172,6 +159,7 @@ public:
     auto width = atlas_size;
     auto max_height = atlas_size;
     std::vector<uint8_t> bitmap(width * max_height);
+    assert(bitmap.size());
     // do the packing, based on the ranges specified
     stbtt_pack_context pc;
     stbtt_PackBegin(&pc, bitmap.data(), width, max_height, 0, 1, nullptr);
@@ -179,7 +167,6 @@ public:
     stbtt_PackSetOversampling(&pc, 1, 1);
     stbtt_PackFontRanges(&pc, ttf_buffer.data(), 0, &range, 1);
     stbtt_PackEnd(&pc);
-    return nullptr;
 
     // get the global metrics for each size/range
     stbtt_fontinfo info;
@@ -225,17 +212,61 @@ public:
     //   }
     // }
 
-    return Texture::Create(width, max_height, GL_RGBA, bitmap.data());
+    auto texture = Texture::Create(width, max_height, GL_RED, bitmap.data());
+    auto label = "atlas";
+    if ((__GLEW_EXT_debug_label)) {
+      glLabelObjectEXT(GL_TEXTURE, texture->Handle(), 0, label);
+    }
+    if ((__GLEW_KHR_debug)) {
+      glObjectLabel(GL_TEXTURE, texture->Handle(), -1, label);
+    }
+
+    return texture;
   }
+};
+
+struct Glyph {
+  float xywh[4];
+  float offset[4];
+};
+
+struct Glyphs {
+  Glyph glyphs[128];
+};
+
+struct Global {
+  float projection[16] = {
+      1, 0, 0, 0, //
+      0, 1, 0, 0, //
+      0, 0, 1, 0, //
+      0, 0, 0, 1  //
+
+  };
+  float screenSize[2];
+  float cellSize[2];
+  float atlasSize[2];
+  float ascent;
+  float descent;
+};
+
+template <typename T> struct TypedUBO {
+  std::shared_ptr<UBO> ubo;
+  T buffer;
+
+  void Initialize() { ubo = UBO::Create(); }
+  void Upload() { ubo->Upload(buffer); }
+  uint32_t Handle() { return ubo->Handle(); }
 };
 
 class TextImpl {
   std::shared_ptr<VAO> vao_;
-  std::shared_ptr<UBO> ubo_global_;
-  std::shared_ptr<UBO> ubo_glyph_;
+  TypedUBO<Global> ubo_global_;
+  TypedUBO<Glyphs> ubo_glyphs_;
   std::shared_ptr<ShaderProgram> shader_;
   FontAtlas atlas_;
   std::shared_ptr<Texture> font_;
+  int cell_width_ = 16;
+  int cell_height_ = 16;
 
 public:
   bool Load() {
@@ -258,8 +289,8 @@ public:
       return false;
     }
 
-    ubo_global_ = UBO::Create();
-    ubo_glyph_ = UBO::Create();
+    ubo_global_.Initialize();
+    ubo_glyphs_.Initialize();
 
     // vertex buffer
     auto vbo = VBO::Create();
@@ -273,35 +304,34 @@ public:
   }
 
   void LoadFont(std::string_view path, float font_size, uint32_t atlas_size) {
+    cell_width_ = font_size / 2;
+    cell_height_ = font_size;
     font_ = atlas_.LoadFont(path, font_size, atlas_size);
-    // for (self.atlas.glyphs)
-    //   | *g, i | {
-    //     self.ubo_glyphs.buffer.glyphs[i] =.{
-    //         .xywh =.{@intToFloat(f32, g.x0), @intToFloat(f32, g.y0),
-    //                  @intToFloat(f32, g.x1), @intToFloat(f32, g.y1)},
-    //         .offset =.{g.xoff, g.yoff, g.xoff2, g.yoff2},
-    //     };
-    //   }
-    // self.ubo_glyphs.upload();
-    // self.ubo_global.buffer.atlasSize =.{
-    //   @intToFloat(f32, atlas_size), @intToFloat(f32, atlas_size)
-    // };
-    // self.ubo_global.buffer.ascent = self.atlas.ascents[0];
-    // self.ubo_global.buffer.descent = self.atlas.descents[0];
+    for (int i = 0; i < GLYPH_COUNT; ++i) {
+      auto &g = atlas_.glyphs[i];
+      ubo_glyphs_.buffer.glyphs[i] = {
+          .xywh = {(float)g.x0, (float)g.y0, (float)g.x1, (float)g.y1},
+          .offset = {(float)g.xoff, (float)g.yoff, (float)g.xoff2,
+                     (float)g.yoff2},
+      };
+    }
+    ubo_glyphs_.Upload();
+    ubo_global_.buffer.atlasSize[0] = (float)atlas_size;
+    ubo_global_.buffer.atlasSize[1] = (float)atlas_size;
+    ubo_global_.buffer.ascent = atlas_.ascents[0];
+    ubo_global_.buffer.descent = atlas_.descents[0];
   }
 
   void Render(int width, int height, std::chrono::nanoseconds duration) {
+    if (!font_) {
+      return;
+    }
 
     // ubo_global
-    // self.ubo_global.buffer.cellSize = .{ @intToFloat(f32, self.cell_width),
-    // @intToFloat(f32, self.cell_height) }; self.ubo_global.buffer.screenSize =
-    // .{ @intToFloat(f32, mouse_input.width), @intToFloat(f32,
-    // mouse_input.height) }; self.ubo_global.buffer.projection = .{
-    //     1, 0, 0, 0,
-    //     0, 1, 0, 0,
-    //     0, 0, 1, 0,
-    //     0, 0, 0, 1,
-    // };
+    ubo_global_.buffer.cellSize[0] = (float)cell_width_;
+    ubo_global_.buffer.cellSize[1] = (float)cell_height_;
+    ubo_global_.buffer.screenSize[0] = (float)width;
+    ubo_global_.buffer.screenSize[1] = (float)height;
     // self.scroll_top_left = screenToDevice(
     //     &self.ubo_global.buffer.projection,
     //     @intCast(i32, mouse_input.width),
@@ -311,32 +341,16 @@ public:
     //     self.scroll_top_left,
     //     self.layout.cursor_position,
     // );
-    // self.ubo_global.upload();
+    ubo_global_.Upload();
 
     auto shader_scope = ScopedBind(shader_);
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    // if (self.texture)
-    //   | *texture | { texture.bind(); }
-    // self.shader.setUbo("Global", 0, self.ubo_global.handle);
-    // self.shader.setUbo("Glyphs", 1, self.ubo_glyphs.handle);
 
-    // if (self.document_gen != self.layout_gen) {
-    //   self.layout_gen = self.document_gen;
-    //   if (self.document)
-    //     | document | {
-    //       // const draw_count = self.layout.layout(document.utf16Slice(),
-    //       // self.atlas);
-    //       const draw_count =
-    //           self.layout.layoutTokens(document.utf8Slice(), self.atlas);
-    //       self.draw_count = draw_count;
-    //     }
-    //   else {
-    //     self.draw_count = 0;
-    //   }
-    //   self.vbo.update(self.layout.cells, .{});
-    // }
+    shader_->SetUBO(0, ubo_global_.Handle());
+    shader_->SetUBO(1, ubo_glyphs_.Handle());
+    ScopedBind(font_);
 
     vao_->Draw(GL_POINTS, 0, 1);
   }

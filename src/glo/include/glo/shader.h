@@ -43,6 +43,7 @@ public:
   void Unbind();
   std::optional<uint32_t> AttributeLocation(const char *name);
   void SetUniformMatrix(const char *name, const float m[16]);
+  void SetUBO(int binding_point, uint32_t ubo);
 };
 
 } // namespace glo

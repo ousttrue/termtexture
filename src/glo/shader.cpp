@@ -132,4 +132,8 @@ void ShaderProgram::SetUniformMatrix(const char *name, const float m[16]) {
   glUniformMatrix4fv(location, 1, GL_FALSE, m);
 }
 
+void ShaderProgram::SetUBO(int binding_point, uint32_t ubo) {
+  glBindBufferBase(GL_UNIFORM_BUFFER, binding_point, ubo);
+}
+
 } // namespace glo
