@@ -106,9 +106,9 @@ Gui::Gui(GLFWwindow *window, std::string_view glsl_version) {
 
   {
     auto text = glo::Text::Create();
-    if (!text->Load()) {
-      throw std::runtime_error("Text::Load");
-    }
+    // if (!text->Load()) {
+    //   throw std::runtime_error("Text::Load");
+    // }
     auto fbo_render = [](int width, int height) {
 
     };

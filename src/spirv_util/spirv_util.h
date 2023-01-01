@@ -13,6 +13,7 @@ SPIRV_UTIL_API void SPIRV_Finalize();
 
 SPIRV_UTIL_API SpirvCompiler *SPIRV_COMPILER_Create_VS();
 SPIRV_UTIL_API SpirvCompiler *SPIRV_COMPILER_Create_FS();
+SPIRV_UTIL_API SpirvCompiler *SPIRV_COMPILER_Create_GS();
 SPIRV_UTIL_API void SPIRV_COMPILER_Destroy(SpirvCompiler *context);
 SPIRV_UTIL_API const unsigned int *
 SPIRV_COMPILER_Compile(SpirvCompiler *context, const char *src,

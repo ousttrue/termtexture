@@ -16,6 +16,7 @@ public:
   void Bind();
   void Unbind();
   void Upload(const void *data, uint32_t size);
+  template <typename T> void Upload(const T &t) { Upload(&t, sizeof(T)); }
   void BindBase(int binding);
 };
 

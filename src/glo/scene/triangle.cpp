@@ -3,7 +3,7 @@
 #include "glo/scoped_binder.h"
 #include "glo/shader.h"
 #include "glo/ubo.h"
-#include "glo/vbo.h"
+#include "glo/vao.h"
 #include <GL/glew.h>
 #include <chrono>
 #include <glm/glm.hpp>
@@ -23,8 +23,8 @@ static const struct {
 
 static const char *vertex_shader_text = R"(#version 450
 // uniform mat4 MVP;
-layout (location = 0) in vec3 vCol;
-layout (location = 1) in vec2 vPos;
+layout (location = 0) in vec2 vPos;
+layout (location = 1) in vec3 vCol;
 layout (location = 0) out vec3 color;
 layout (binding = 0) uniform matrix {
     mat4 MVP;
@@ -72,7 +72,7 @@ public:
       return false;
     }
     shader_ = ShaderProgram::Create();
-    if (!shader_->Link(vs->shader_, fs->shader_)) {
+    if (!shader_->Link({.vs = vs->shader_, .fs = fs->shader_})) {
       return false;
     }
 
@@ -80,21 +80,16 @@ public:
 
     // vertex buffer
     auto vbo = VBO::Create(vertices, sizeof(vertices));
-    vao_ = VAO::Create(vbo);
-    {
-      auto vao_bind = ScopedBind(vao_);
-      auto vbo_bind = ScopedBind(vbo);
-      if (auto vpos_location = shader_->AttributeLocation("vPos")) {
-        glEnableVertexAttribArray(vpos_location.value());
-        glVertexAttribPointer(vpos_location.value(), 2, GL_FLOAT, GL_FALSE,
-                              sizeof(vertices[0]), (void *)0);
-      }
-      if (auto vcol_location = shader_->AttributeLocation("vCol")) {
-        glEnableVertexAttribArray(vcol_location.value());
-        glVertexAttribPointer(vcol_location.value(), 3, GL_FLOAT, GL_FALSE,
-                              sizeof(vertices[0]), (void *)(sizeof(float) * 2));
-      }
-    }
+
+    // float x, y;
+    // float r, g, b;
+    // TODO: from shader reflection
+    VertexLayout layout[] = {
+        {{"vPos", 0}, 2, 20, 0},
+        {{"vCol", 1}, 3, 20, 8},
+    };
+
+    vao_ = VAO::Create(vbo, layout);
 
     return true;
   }
@@ -114,7 +109,7 @@ public:
       auto ortho = glm::ortho(-ratio, ratio, -1.f, 1.f, 1.f, -1.f);
       auto mvp = ortho * rotate_z;
 
-      ubo_->Upload(&mvp, sizeof(mvp));
+      ubo_->Upload(mvp);
     }
 
     {

@@ -1,8 +1,11 @@
 #include "glo/scene/text.h"
+#include "glo/shader.h"
+#include "glo/ubo.h"
+#include "glo/vao.h"
 #include <chrono>
 #include <memory>
 
-auto vs = R"(#version 420
+auto vs_src = R"(#version 420
 in vec3 i_Pos;
 in vec3 i_Color;
 // out vec3 v_Color;
@@ -14,7 +17,7 @@ void main() {
 }
 )";
 
-auto gs = R"(#version 420 core
+auto gs_src = R"(#version 420 core
 layout(points) in;
 layout(triangle_strip, max_vertices = 4) out;
 
@@ -93,7 +96,7 @@ void main() {
 }
 )";
 
-auto fs = R"(#version 460 core
+auto fs_src = R"(#version 460 core
 
 in vec2 g_TexCoords;
 in vec3 g_Color;
@@ -110,9 +113,56 @@ void main() {
 namespace glo {
 
 class TextImpl {
+  std::shared_ptr<VAO> vao_;
+  std::shared_ptr<UBO> ubo_global_;
+  std::shared_ptr<UBO> ubo_glyph_;
+  std::shared_ptr<ShaderProgram> shader_;
 
 public:
-  bool Load() { return true; }
+  bool Load() {
+    // shader
+    auto vs = ShaderCompile::VertexShader();
+    if (!vs->Compile(vs_src)) {
+      return false;
+    }
+    auto gs = ShaderCompile::GeometryShader();
+    if (!gs->Compile(vs_src)) {
+      return false;
+    }
+    auto fs = ShaderCompile::FragmentShader();
+    if (!fs->Compile(fs_src)) {
+      return false;
+    }
+    shader_ = ShaderProgram::Create();
+    if (!shader_->Link(
+            {.vs = vs->shader_, .fs = fs->shader_, .gs = gs->shader_})) {
+      return false;
+    }
+
+    ubo_global_ = UBO::Create();
+    ubo_glyph_ = UBO::Create();
+
+    // vertex buffer
+    // auto vbo = VBO::Create(vertices, sizeof(vertices));
+    // vao_ = VAO::Create(vbo);
+    // {
+    //   auto vao_bind = ScopedBind(vao_);
+    //   auto vbo_bind = ScopedBind(vbo);
+    //   if (auto vpos_location = shader_->AttributeLocation("vPos")) {
+    //     glEnableVertexAttribArray(vpos_location.value());
+    //     glVertexAttribPointer(vpos_location.value(), 2, GL_FLOAT, GL_FALSE,
+    //                           sizeof(vertices[0]), (void *)0);
+    //   }
+    //   if (auto vcol_location = shader_->AttributeLocation("vCol")) {
+    //     glEnableVertexAttribArray(vcol_location.value());
+    //     glVertexAttribPointer(vcol_location.value(), 3, GL_FLOAT, GL_FALSE,
+    //                           sizeof(vertices[0]), (void *)(sizeof(float) *
+    //                           2));
+    //   }
+    // }
+
+    return true;
+  }
 
   void Render(int width, int height, std::chrono::nanoseconds duration) {}
 };

@@ -18,7 +18,14 @@ public:
   ShaderCompile &operator=(const ShaderCompile &) = delete;
   static std::shared_ptr<ShaderCompile> VertexShader();
   static std::shared_ptr<ShaderCompile> FragmentShader();
+  static std::shared_ptr<ShaderCompile> GeometryShader();
   bool Compile(const char *src);
+};
+
+struct Shaders {
+  uint32_t vs = 0;
+  uint32_t fs = 0;
+  uint32_t gs = 0;
 };
 
 class ShaderProgram {
@@ -31,7 +38,7 @@ public:
   ShaderProgram(const ShaderProgram &) = delete;
   ShaderProgram &operator=(const ShaderProgram &) = delete;
   static std::shared_ptr<ShaderProgram> Create();
-  bool Link(uint32_t vertex_shader, uint32_t fragment_shader);
+  bool Link(Shaders shaders);
   void Bind();
   void Unbind();
   std::optional<uint32_t> AttributeLocation(const char *name);

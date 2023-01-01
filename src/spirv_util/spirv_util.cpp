@@ -68,6 +68,9 @@ SPIRV_UTIL_API SpirvCompiler *SPIRV_COMPILER_Create_VS() {
 SPIRV_UTIL_API SpirvCompiler *SPIRV_COMPILER_Create_FS() {
   return new SpirvCompiler(EShLangFragment);
 }
+SPIRV_UTIL_API SpirvCompiler *SPIRV_COMPILER_Create_GS() {
+  return new SpirvCompiler(EShLangGeometry);
+}
 SPIRV_UTIL_API void SPIRV_COMPILER_Destroy(SpirvCompiler *context) {
   delete context;
 }

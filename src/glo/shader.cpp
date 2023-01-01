@@ -20,6 +20,9 @@ std::shared_ptr<ShaderCompile> ShaderCompile::VertexShader() {
 std::shared_ptr<ShaderCompile> ShaderCompile::FragmentShader() {
   return std::shared_ptr<ShaderCompile>(new ShaderCompile(GL_FRAGMENT_SHADER));
 }
+std::shared_ptr<ShaderCompile> ShaderCompile::GeometryShader() {
+  return std::shared_ptr<ShaderCompile>(new ShaderCompile(GL_GEOMETRY_SHADER));
+}
 bool ShaderCompile::Compile(const char *src) {
 #if USE_GLSLANG
   SPIRV_Initialize();
@@ -31,6 +34,10 @@ bool ShaderCompile::Compile(const char *src) {
 
   case GL_FRAGMENT_SHADER:
     compiler = SPIRV_COMPILER_Create_FS();
+    break;
+
+  case GL_GEOMETRY_SHADER:
+    compiler = SPIRV_COMPILER_Create_GS();
     break;
 
   default:
@@ -87,9 +94,14 @@ ShaderProgram::~ShaderProgram() {
 std::shared_ptr<ShaderProgram> ShaderProgram::Create() {
   return std::shared_ptr<ShaderProgram>(new ShaderProgram);
 }
-bool ShaderProgram::Link(uint32_t vertex_shader, uint32_t fragment_shader) {
-  glAttachShader(program_, vertex_shader);
-  glAttachShader(program_, fragment_shader);
+bool ShaderProgram::Link(Shaders shaders) {
+  if (shaders.vs)
+    glAttachShader(program_, shaders.vs);
+  if (shaders.fs)
+    glAttachShader(program_, shaders.fs);
+  if (shaders.gs)
+    glAttachShader(program_, shaders.gs);
+
   glLinkProgram(program_);
   GLint isLinked = 0;
   glGetProgramiv(program_, GL_LINK_STATUS, &isLinked);

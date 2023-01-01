@@ -7,6 +7,7 @@ glo_lib = static_library('glo', [
     'vbo.cpp',
     'shader.cpp',
     'ubo.cpp',
+    'vao.cpp',
     #
     'scene/triangle.cpp',
     'scene/text.cpp',
