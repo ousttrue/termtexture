@@ -2,6 +2,7 @@
 #include "scoped_binder.h"
 #include "shader.h"
 #include "vbo.h"
+#include "ubo.h"
 #include <GL/glew.h>
 #include <memory>
 #include <optional>
@@ -20,9 +21,12 @@ static const char *vertex_shader_text = R"(#version 450
 layout (location = 0) in vec3 vCol;
 layout (location = 1) in vec2 vPos;
 layout (location = 0) out vec3 color;
+layout (binding = 0) uniform matrix {
+    mat4 MVP;
+} Mat;
 void main()
 {
-    gl_Position = vec4(vPos, 0.0, 1.0);
+    gl_Position = Mat.MVP * vec4(vPos, 0.0, 1.0);
     color = vCol;
 }
 )";
@@ -40,6 +44,7 @@ namespace glo {
 
 class TriangleImpl {
   std::shared_ptr<VAO> vao_;
+  std::shared_ptr<UBO> ubo_;
   std::shared_ptr<ShaderProgram> shader_;
 
 public:
@@ -66,6 +71,8 @@ public:
       return false;
     }
 
+    ubo_ = UBO::Create();
+
     // vertex buffer
     auto vbo = VBO::Create(vertices, sizeof(vertices));
     vao_ = VAO::Create(vbo);
@@ -88,16 +95,23 @@ public:
   }
 
   void Render() {
-    auto vao_bind = ScopedBind(vao_);
-    auto shader_bind = ScopedBind(shader_);
-    // float mvp[16] = {
-    //     1, 0, 0, 0, //
-    //     0, 1, 0, 0, //
-    //     0, 0, 1, 0, //
-    //     0, 0, 0, 1, //
-    // };
-    // shader_->SetUniformMatrix("MVP", mvp);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
+    {
+      auto ubo_bind = ScopedBind(ubo_);
+      float mvp[16] = {
+          1, 0, 0, 0, //
+          0, 1, 0, 0, //
+          0, 0, 1, 0, //
+          0, 0, 0, 1, //
+      };
+      ubo_->Upload(mvp, sizeof(mvp));
+    }
+
+    {
+      auto shader_bind = ScopedBind(shader_);
+      auto vao_bind = ScopedBind(vao_);
+      ubo_->BindBase(0);
+      glDrawArrays(GL_TRIANGLES, 0, 3);
+    }
   }
 };
 

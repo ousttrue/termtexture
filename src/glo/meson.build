@@ -6,6 +6,7 @@ glo_lib = static_library('glo', [
     'fbo.cpp',
     'vbo.cpp',
     'shader.cpp',
+    'ubo.cpp',
 ],
 dependencies: [glew_dep, plog_dep, spirv_util_dep],
 )
