@@ -7,7 +7,8 @@ namespace glo {
 
 template <typename T>
 static std::vector<T> ReadAllBytes(std::string_view path) {
-  std::ifstream ifs(std::string(path).c_str(),
+  auto str = std::string(path);
+  std::ifstream ifs(str.c_str(),
                     std::ios::binary | std::ios::ate);
   if (!ifs) {
     return {};

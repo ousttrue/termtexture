@@ -7,11 +7,11 @@ namespace glo {
 // Fbo
 //
 Fbo::Fbo(int width, int height, bool use_depth)
-    : texture_(width, height, GL_RGBA) {
+    : texture_(Texture::Create(width, height, GL_RGBA)) {
   glGenFramebuffers(1, &fbo_);
   glBindFramebuffer(GL_FRAMEBUFFER, fbo_);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-                         texture_.Handle(), 0);
+                         texture_->Handle(), 0);
   unsigned int buf = GL_COLOR_ATTACHMENT0;
   glDrawBuffers(1, &buf);
 

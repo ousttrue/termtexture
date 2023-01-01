@@ -40,7 +40,7 @@ public:
 } // namespace plog
 
 int main(int argc, char **argv) {
-  auto fontfile = "C:/Windows/Fonts/consola.ttf";
+  std::string fontfile = "C:/Windows/Fonts/consola.ttf";
   if (argc > 1) {
     fontfile = argv[1];
   }

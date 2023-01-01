@@ -10,7 +10,7 @@
             "name": "Debug",
             "program": "${workspaceFolder}/prefix/bin/glfwterm.exe",
             "args": [
-                "${env:USERPROFILE}/.fonts/HackGenNerdConsole-Regular.tff",
+                // "${env:USERPROFILE}/.fonts/HackGenNerdConsole-Regular.tff",
             ],
             "cwd": "${workspaceFolder}"
         }

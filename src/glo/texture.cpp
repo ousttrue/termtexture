@@ -1,29 +1,38 @@
 #include "glo/texture.h"
 #include <GL/glew.h>
+#include <memory>
+#include <plog/Log.h>
 
 namespace glo {
-Texture::Texture(int width, int height, int pixel_type, const uint8_t *data)
+Texture::Texture(int width, int height, int pixel_type)
     : width_(width), height_(height), pixel_type_(pixel_type) {
   glGenTextures(1, &handle_);
-  // logger.debug(f'Texture: {self.handle}')
-
+  PLOG_DEBUG << handle_;
   Bind();
-
-  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-  // glPixelStorei(GL_UNPACK_ROW_LENGTH, width)
-  glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
-  glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
-
-  glTexImage2D(GL_TEXTURE_2D, 0, pixel_type_, width_, height_, 0, pixel_type_,
-               GL_UNSIGNED_BYTE, data);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   Unbind();
 }
 
 Texture::~Texture() {
-  // logger.debug(f'{self.handle}')
+  PLOG_DEBUG << handle_;
   glDeleteTextures(1, &handle_);
+}
+
+std::shared_ptr<Texture> Texture::Create(int width, int height, int pixel_type,
+                                         const uint8_t *data) {
+  auto ptr = std::shared_ptr<Texture>(new Texture(width, height, pixel_type));
+  {
+    ptr->Bind();
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    // glPixelStorei(GL_UNPACK_ROW_LENGTH, width)
+    glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
+    glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
+    glTexImage2D(GL_TEXTURE_2D, 0, ptr->pixel_type_, ptr->width_, ptr->height_,
+                 0, ptr->pixel_type_, GL_UNSIGNED_BYTE, data);
+    ptr->Unbind();
+  }
+  return ptr;
 }
 
 void Texture::Update(int x, int y, int w, int h, const uint8_t *data) {

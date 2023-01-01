@@ -26,7 +26,7 @@
 #endif
 
 Gui::Gui(GLFWwindow *window, std::string_view glsl_version,
-         std::string_view fontfile) {
+         const std::string &fontfile) {
   // Setup Dear ImGui context
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
