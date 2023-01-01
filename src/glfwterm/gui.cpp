@@ -3,8 +3,8 @@
 #include "gui_widgets.h"
 #include <__msvc_chrono.hpp>
 #include <chrono>
-#include <glo/text.h>
-#include <glo/triangle.h>
+#include <glo/scene/text.h>
+#include <glo/scene/triangle.h>
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
@@ -93,15 +93,27 @@ Gui::Gui(GLFWwindow *window, std::string_view glsl_version) {
     if (!triangle->Load()) {
       throw std::runtime_error("Triangle::Load");
     }
+    auto fbo_render = [triangle](int width, int height) {
+      auto seconds =
+          std::chrono::duration<double, std::ratio<1, 1>>(glfwGetTime());
+      triangle->Render(
+          width, height,
+          std::chrono::duration_cast<std::chrono::nanoseconds>(seconds));
+    };
     windows_.push_back(
-        {.on_updated = fbo_window([triangle](int width, int height) {
-           auto seconds =
-               std::chrono::duration<double, std::ratio<1, 1>>(glfwGetTime());
-           triangle->Render(
-               width, height,
-               std::chrono::duration_cast<std::chrono::nanoseconds>(seconds));
-         }),
-         .use_show = false});
+        {.on_updated = fbo_window(fbo_render), .use_show = false});
+  }
+
+  {
+    auto text = glo::Text::Create();
+    if (!text->Load()) {
+      throw std::runtime_error("Text::Load");
+    }
+    auto fbo_render = [](int width, int height) {
+
+    };
+    windows_.push_back(
+        {.on_updated = fbo_window(fbo_render), .use_show = false});
   }
 }
 

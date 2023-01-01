@@ -1,4 +1,4 @@
-#include "glo/triangle.h"
+#include "glo/scene/triangle.h"
 #include "glm/ext/matrix_clip_space.hpp"
 #include "glo/scoped_binder.h"
 #include "glo/shader.h"

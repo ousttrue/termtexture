@@ -8,8 +8,8 @@ glo_lib = static_library('glo', [
     'shader.cpp',
     'ubo.cpp',
     #
-    'triangle.cpp',
-    'text.cpp',
+    'scene/triangle.cpp',
+    'scene/text.cpp',
 ],
 include_directories: glo_inc,
 dependencies: [glew_dep, plog_dep, spirv_util_dep, glm_dep],

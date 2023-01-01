@@ -1,4 +1,6 @@
-#include "glo/text.h"
+#include "glo/scene/text.h"
+#include <chrono>
+#include <memory>
 
 auto vs = R"(#version 420
 in vec3 i_Pos;
@@ -105,4 +107,22 @@ void main() {
 }
 )";
 
-namespace glo {}
+namespace glo {
+
+class TextImpl {
+
+public:
+  bool Load() { return true; }
+
+  void Render(int width, int height, std::chrono::nanoseconds duration) {}
+};
+
+Text::Text() : impl_(new TextImpl) {}
+Text::~Text() { delete (impl_); }
+std::shared_ptr<Text> Text::Create() { return std::shared_ptr<Text>(new Text); }
+bool Text::Load() { return impl_->Load(); }
+void Text::Render(int width, int height, std::chrono::nanoseconds duration) {
+  impl_->Render(width, height, duration);
+}
+
+} // namespace glo
