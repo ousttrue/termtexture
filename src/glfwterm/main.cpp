@@ -39,7 +39,11 @@ public:
 };
 } // namespace plog
 
-int main(int, char **) {
+int main(int argc, char **argv) {
+  auto fontfile = "C:/Windows/Fonts/consola.ttf";
+  if (argc > 1) {
+    fontfile = argv[1];
+  }
   static plog::ColorConsoleAppender<plog::MyFormatter> consoleAppender;
   plog::init(plog::verbose, &consoleAppender);
   PLOG_INFO << "start GLFWTERM...";
@@ -51,7 +55,7 @@ int main(int, char **) {
     return 1;
   }
 
-  Gui gui(window_handle, window.glsl_version());
+  Gui gui(window_handle, window.glsl_version(), fontfile);
 
   while (window.BeginFrame(gui.clear_color)) {
     gui.UpdateRender();

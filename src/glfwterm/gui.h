@@ -21,7 +21,8 @@ class Gui {
 public:
   float clear_color[4] = {0.45f, 0.55f, 0.60f, 1.00f};
 
-  Gui(struct GLFWwindow *window, std::string_view glsl_version);
+  Gui(struct GLFWwindow *window, std::string_view glsl_version,
+      std::string_view fontfile);
   ~Gui();
   void UpdateRender();
 };

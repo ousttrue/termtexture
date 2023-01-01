@@ -25,7 +25,8 @@
 #pragma comment(lib, "legacy_stdio_definitions")
 #endif
 
-Gui::Gui(GLFWwindow *window, std::string_view glsl_version) {
+Gui::Gui(GLFWwindow *window, std::string_view glsl_version,
+         std::string_view fontfile) {
   // Setup Dear ImGui context
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
@@ -107,7 +108,7 @@ Gui::Gui(GLFWwindow *window, std::string_view glsl_version) {
 
   {
     auto text = glo::Text::Create();
-    if (!text->Load()) {
+    if (!text->Load(fontfile, 30, 1024)) {
       throw std::runtime_error("Text::Load");
     }
     auto fbo_render = [text](int width, int height) {
