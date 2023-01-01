@@ -1,4 +1,4 @@
-#include "vbo.h"
+#include "glo/vbo.h"
 #include <GL/glew.h>
 #include <stdint.h>
 

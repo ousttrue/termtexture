@@ -1,4 +1,4 @@
-#include "texture.h"
+#include "glo/texture.h"
 #include <GL/glew.h>
 
 namespace glo {

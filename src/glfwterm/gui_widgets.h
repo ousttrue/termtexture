@@ -1,5 +1,5 @@
 #pragma once
-#include "fbo.h"
+#include <glo/fbo.h>
 #include <functional>
 #include <imgui.h>
 #include <memory>

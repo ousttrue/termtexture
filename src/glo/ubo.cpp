@@ -1,4 +1,4 @@
-#include "ubo.h"
+#include "glo/ubo.h"
 #include <GL/glew.h>
 
 namespace glo {

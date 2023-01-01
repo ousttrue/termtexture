@@ -1,4 +1,4 @@
-#include "shader.h"
+#include "glo/shader.h"
 #include <GL/glew.h>
 #include <plog/Log.h>
 

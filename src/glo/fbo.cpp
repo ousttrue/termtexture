@@ -1,4 +1,4 @@
-#include "fbo.h"
+#include "glo/fbo.h"
 #include <GL/glew.h>
 
 namespace glo {

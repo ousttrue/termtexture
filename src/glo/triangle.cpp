@@ -1,9 +1,9 @@
-#include "triangle.h"
+#include "glo/triangle.h"
 #include "glm/ext/matrix_clip_space.hpp"
-#include "scoped_binder.h"
-#include "shader.h"
-#include "ubo.h"
-#include "vbo.h"
+#include "glo/scoped_binder.h"
+#include "glo/shader.h"
+#include "glo/ubo.h"
+#include "glo/vbo.h"
 #include <GL/glew.h>
 #include <chrono>
 #include <glm/glm.hpp>
@@ -106,7 +106,7 @@ public:
       auto ubo_bind = ScopedBind(ubo_);
       DoubleSeconds seconds = duration;
 
-      const float ANGLE_VELOCITY = std::numbers::pi / 5;
+      const float ANGLE_VELOCITY = static_cast<float>(std::numbers::pi) / 5;
       auto rotate_z =
           glm::rotate(static_cast<float>(seconds.count()) * ANGLE_VELOCITY,
                       glm::vec3(0, 0, 1));
@@ -128,6 +128,9 @@ public:
 
 Triangle::Triangle() : impl_(new TriangleImpl) {}
 Triangle::~Triangle() { delete impl_; }
+std::shared_ptr<Triangle> Triangle::Create() {
+  return std::shared_ptr<Triangle>(new Triangle);
+}
 bool Triangle::Load() { return impl_->Load(); }
 void Triangle::Render(int width, int height,
                       std::chrono::nanoseconds duration) {
