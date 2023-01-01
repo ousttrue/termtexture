@@ -99,13 +99,17 @@ public:
     return true;
   }
 
+  using DoubleSeconds = std::chrono::duration<double, std::ratio<1, 1>>;
+
   void Render(int width, int height, std::chrono::nanoseconds duration) {
     {
       auto ubo_bind = ScopedBind(ubo_);
+      DoubleSeconds seconds = duration;
 
-      const float ANGLE_VELOCITY = std::numbers::pi * 0.000000001f / 5;
+      const float ANGLE_VELOCITY = std::numbers::pi / 5;
       auto rotate_z =
-          glm::rotate(duration.count() * ANGLE_VELOCITY, glm::vec3(0, 0, 1));
+          glm::rotate(static_cast<float>(seconds.count()) * ANGLE_VELOCITY,
+                      glm::vec3(0, 0, 1));
       auto ratio = (float)width / (float)height;
       auto ortho = glm::ortho(-ratio, ratio, -1.f, 1.f, 1.f, -1.f);
       auto mvp = ortho * rotate_z;
