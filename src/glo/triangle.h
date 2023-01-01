@@ -1,4 +1,5 @@
 #pragma once
+#include <chrono>
 
 namespace glo {
 
@@ -11,7 +12,7 @@ public:
   Triangle();
   ~Triangle();
   bool Load();
-  void Render();
+  void Render(int width, int height, std::chrono::nanoseconds duration);
 };
 
-} // namespace scene
+} // namespace glo

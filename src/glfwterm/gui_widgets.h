@@ -14,17 +14,19 @@ struct simple_window {
 };
 
 namespace glo {
-  class FboRenderer;
+class FboRenderer;
 }
 
 struct fbo_window {
+  using RenderFunc = std::function<void(int, int)>;
+
   std::shared_ptr<class glo::FboRenderer> fbo_;
   ImVec4 bg_ = {1, 1, 1, 1};
   ImVec4 tint_ = {1, 1, 1, 1};
   float clear_color_[4] = {0.3f, 0.2f, 0.1f, 1.0f};
-  std::function<void()> render_;
+  RenderFunc render_;
 
-  fbo_window(const std::function<void()> &render);
+  fbo_window(const RenderFunc &render);
   void operator()(bool *p_open);
 
 private:

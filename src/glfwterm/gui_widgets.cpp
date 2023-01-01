@@ -67,7 +67,7 @@ void fbo_window::operator()(bool *p_open) {
   ImGui::PopStyleVar();
 }
 
-fbo_window::fbo_window(const std::function<void()> &render)
+fbo_window::fbo_window(const RenderFunc &render)
     : fbo_(new glo::FboRenderer), render_(render) {}
 
 void fbo_window::show_fbo(float x, float y, float w, float h) {
@@ -92,7 +92,7 @@ void fbo_window::show_fbo(float x, float y, float w, float h) {
     // self.mouse_event.process(mouse_input)
 
     if (render_) {
-      render_();
+      render_(w, h);
     }
 
     fbo_->End();

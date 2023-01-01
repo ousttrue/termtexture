@@ -1,10 +1,15 @@
 #include "triangle.h"
+#include "glm/ext/matrix_clip_space.hpp"
 #include "scoped_binder.h"
 #include "shader.h"
-#include "vbo.h"
 #include "ubo.h"
+#include "vbo.h"
 #include <GL/glew.h>
+#include <chrono>
+#include <glm/glm.hpp>
+#include <glm/gtx/transform.hpp>
 #include <memory>
+#include <numbers>
 #include <optional>
 #include <plog/Log.h>
 #include <stdint.h>
@@ -94,16 +99,18 @@ public:
     return true;
   }
 
-  void Render() {
+  void Render(int width, int height, std::chrono::nanoseconds duration) {
     {
       auto ubo_bind = ScopedBind(ubo_);
-      float mvp[16] = {
-          1, 0, 0, 0, //
-          0, 1, 0, 0, //
-          0, 0, 1, 0, //
-          0, 0, 0, 1, //
-      };
-      ubo_->Upload(mvp, sizeof(mvp));
+
+      const float ANGLE_VELOCITY = std::numbers::pi * 0.000000001f / 5;
+      auto rotate_z =
+          glm::rotate(duration.count() * ANGLE_VELOCITY, glm::vec3(0, 0, 1));
+      auto ratio = (float)width / (float)height;
+      auto ortho = glm::ortho(-ratio, ratio, -1.f, 1.f, 1.f, -1.f);
+      auto mvp = ortho * rotate_z;
+
+      ubo_->Upload(&mvp, sizeof(mvp));
     }
 
     {
@@ -118,6 +125,9 @@ public:
 Triangle::Triangle() : impl_(new TriangleImpl) {}
 Triangle::~Triangle() { delete impl_; }
 bool Triangle::Load() { return impl_->Load(); }
-void Triangle::Render() { impl_->Render(); }
+void Triangle::Render(int width, int height,
+                      std::chrono::nanoseconds duration) {
+  impl_->Render(width, height, duration);
+}
 
 } // namespace glo

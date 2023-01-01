@@ -1,5 +1,8 @@
 #include "gui.h"
+#include "GLFW/glfw3.h"
 #include "gui_widgets.h"
+#include <__msvc_chrono.hpp>
+#include <chrono>
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
@@ -89,7 +92,13 @@ Gui::Gui(GLFWwindow *window, std::string_view glsl_version) {
     throw std::runtime_error("Triangle::Load");
   }
   windows_.push_back(
-      {.on_updated = fbo_window([triangle]() { triangle->Render(); }),
+      {.on_updated = fbo_window([triangle](int width, int height) {
+         auto seconds =
+             std::chrono::duration<double, std::ratio<1, 1>>(glfwGetTime());
+         triangle->Render(
+             width, height,
+             std::chrono::duration_cast<std::chrono::nanoseconds>(seconds));
+       }),
        .use_show = false});
 }
 
