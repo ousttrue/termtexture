@@ -82,6 +82,7 @@ Gui::Gui(GLFWwindow *window, std::string_view glsl_version) {
   // to created a named window.
   windows_.push_back({.on_updated =
                           simple_window{
+                              .name_ = "Hello, world!",
                               .show_demo_window_ = &windows_.front().show,
                               .show_another_window_ = &windows_.back().show,
                               .clear_color = clear_color,
@@ -101,19 +102,23 @@ Gui::Gui(GLFWwindow *window, std::string_view glsl_version) {
           std::chrono::duration_cast<std::chrono::nanoseconds>(seconds));
     };
     windows_.push_back(
-        {.on_updated = fbo_window(fbo_render), .use_show = false});
+        {.on_updated = fbo_window("triangle", fbo_render), .use_show = false});
   }
 
   {
     auto text = glo::Text::Create();
-    // if (!text->Load()) {
-    //   throw std::runtime_error("Text::Load");
-    // }
-    auto fbo_render = [](int width, int height) {
-
+    if (!text->Load()) {
+      throw std::runtime_error("Text::Load");
+    }
+    auto fbo_render = [text](int width, int height) {
+      auto seconds =
+          std::chrono::duration<double, std::ratio<1, 1>>(glfwGetTime());
+      text->Render(
+          width, height,
+          std::chrono::duration_cast<std::chrono::nanoseconds>(seconds));
     };
     windows_.push_back(
-        {.on_updated = fbo_window(fbo_render), .use_show = false});
+        {.on_updated = fbo_window("text", fbo_render), .use_show = false});
   }
 }
 

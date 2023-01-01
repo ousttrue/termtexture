@@ -21,11 +21,11 @@ static const struct {
                  {0.6f, -0.4f, 0.f, 1.f, 0.f},
                  {0.f, 0.6f, 0.f, 0.f, 1.f}};
 
-static const char *vertex_shader_text = R"(#version 450
-// uniform mat4 MVP;
+auto vertex_shader_text = R"(#version 450
 layout (location = 0) in vec2 vPos;
 layout (location = 1) in vec3 vCol;
 layout (location = 0) out vec3 color;
+// uniform mat4 MVP;
 layout (binding = 0) uniform matrix {
     mat4 MVP;
 } Mat;
@@ -36,7 +36,7 @@ void main()
 }
 )";
 
-static const char *fragment_shader_text = R"(#version 450
+auto fragment_shader_text = R"(#version 450
 layout (location = 0) in vec3 color;
 layout (location = 0) out vec4 uFragColor;
 void main()
@@ -64,11 +64,11 @@ public:
   bool Load() {
     // shader
     auto vs = ShaderCompile::VertexShader();
-    if (!vs->Compile(vertex_shader_text)) {
+    if (!vs->Compile(vertex_shader_text, true)) {
       return false;
     }
     auto fs = ShaderCompile::FragmentShader();
-    if (!fs->Compile(fragment_shader_text)) {
+    if (!fs->Compile(fragment_shader_text, true)) {
       return false;
     }
     shader_ = ShaderProgram::Create();
@@ -84,12 +84,11 @@ public:
     // float x, y;
     // float r, g, b;
     // TODO: from shader reflection
-    VertexLayout layout[] = {
+    VertexLayout layouts[] = {
         {{"vPos", 0}, 2, 20, 0},
         {{"vCol", 1}, 3, 20, 8},
     };
-
-    vao_ = VAO::Create(vbo, layout);
+    vao_ = VAO::Create(vbo, layouts);
 
     return true;
   }

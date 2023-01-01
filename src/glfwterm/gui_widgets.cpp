@@ -20,8 +20,8 @@ void simple_window::operator()(bool *) {
   static float f = 0.0f;
   static int counter = 0;
 
-  ImGui::Begin("Hello, world!"); // Create a window called "Hello,
-                                 // world!" and append into it.
+  ImGui::Begin(name_.c_str()); // Create a window called "Hello,
+                               // world!" and append into it.
 
   ImGui::Text("This is some useful text."); // Display some text (you can
                                             // use a format strings too)
@@ -54,7 +54,7 @@ void fbo_window::operator()(bool *p_open) {
   }
 
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0, 0});
-  if (ImGui::Begin("render target", p_open,
+  if (ImGui::Begin(name_.c_str(), p_open,
                    ImGuiWindowFlags_NoScrollbar |
                        ImGuiWindowFlags_NoScrollWithMouse)) {
     auto [x, y] = ImGui::GetWindowPos();
@@ -66,8 +66,8 @@ void fbo_window::operator()(bool *p_open) {
   ImGui::PopStyleVar();
 }
 
-fbo_window::fbo_window(const RenderFunc &render)
-    : fbo_(new glo::FboRenderer), render_(render) {}
+fbo_window::fbo_window(std::string_view name, const RenderFunc &render)
+    : name_(name), fbo_(new glo::FboRenderer), render_(render) {}
 
 void fbo_window::show_fbo(float x, float y, float w, float h) {
   assert(w);

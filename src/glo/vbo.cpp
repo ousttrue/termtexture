@@ -11,9 +11,11 @@ VBO::VBO() { glGenBuffers(1, &vbo_); }
 VBO::~VBO() { glDeleteBuffers(1, &vbo_); }
 std::shared_ptr<VBO> VBO::Create(const void *data, uint32_t size) {
   auto ptr = std::shared_ptr<VBO>(new VBO);
-  ptr->Bind();
-  glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
-  ptr->Unbind();
+  if (data && size) {
+    ptr->Bind();
+    glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
+    ptr->Unbind();
+  }
   return ptr;
 }
 void VBO::Bind() { glBindBuffer(GL_ARRAY_BUFFER, vbo_); }

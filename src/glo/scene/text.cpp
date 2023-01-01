@@ -1,8 +1,10 @@
 #include "glo/scene/text.h"
+#include "glo/scoped_binder.h"
 #include "glo/shader.h"
 #include "glo/ubo.h"
 #include "glo/vao.h"
 #include <chrono>
+#include <gl/glew.h>
 #include <memory>
 
 auto vs_src = R"(#version 420
@@ -122,15 +124,15 @@ public:
   bool Load() {
     // shader
     auto vs = ShaderCompile::VertexShader();
-    if (!vs->Compile(vs_src)) {
+    if (!vs->Compile(vs_src, false)) {
       return false;
     }
     auto gs = ShaderCompile::GeometryShader();
-    if (!gs->Compile(vs_src)) {
+    if (!gs->Compile(gs_src, false)) {
       return false;
     }
     auto fs = ShaderCompile::FragmentShader();
-    if (!fs->Compile(fs_src)) {
+    if (!fs->Compile(fs_src, false)) {
       return false;
     }
     shader_ = ShaderProgram::Create();
@@ -143,28 +145,66 @@ public:
     ubo_glyph_ = UBO::Create();
 
     // vertex buffer
-    // auto vbo = VBO::Create(vertices, sizeof(vertices));
-    // vao_ = VAO::Create(vbo);
-    // {
-    //   auto vao_bind = ScopedBind(vao_);
-    //   auto vbo_bind = ScopedBind(vbo);
-    //   if (auto vpos_location = shader_->AttributeLocation("vPos")) {
-    //     glEnableVertexAttribArray(vpos_location.value());
-    //     glVertexAttribPointer(vpos_location.value(), 2, GL_FLOAT, GL_FALSE,
-    //                           sizeof(vertices[0]), (void *)0);
-    //   }
-    //   if (auto vcol_location = shader_->AttributeLocation("vCol")) {
-    //     glEnableVertexAttribArray(vcol_location.value());
-    //     glVertexAttribPointer(vcol_location.value(), 3, GL_FLOAT, GL_FALSE,
-    //                           sizeof(vertices[0]), (void *)(sizeof(float) *
-    //                           2));
-    //   }
-    // }
+    auto vbo = VBO::Create();
+    VertexLayout layouts[] = {
+        {{"i_Pos", 0}, 3, 24, 0},
+        {{"i_Color", 1}, 3, 24, 12},
+    };
+    vao_ = VAO::Create(vbo, layouts);
 
     return true;
   }
 
-  void Render(int width, int height, std::chrono::nanoseconds duration) {}
+  void Render(int width, int height, std::chrono::nanoseconds duration) {
+
+    // ubo_global
+    // self.ubo_global.buffer.cellSize = .{ @intToFloat(f32, self.cell_width),
+    // @intToFloat(f32, self.cell_height) }; self.ubo_global.buffer.screenSize =
+    // .{ @intToFloat(f32, mouse_input.width), @intToFloat(f32,
+    // mouse_input.height) }; self.ubo_global.buffer.projection = .{
+    //     1, 0, 0, 0,
+    //     0, 1, 0, 0,
+    //     0, 0, 1, 0,
+    //     0, 0, 0, 1,
+    // };
+    // self.scroll_top_left = screenToDevice(
+    //     &self.ubo_global.buffer.projection,
+    //     @intCast(i32, mouse_input.width),
+    //     @intCast(i32, mouse_input.height),
+    //     @intCast(i32, self.cell_width),
+    //     @intCast(i32, self.cell_height),
+    //     self.scroll_top_left,
+    //     self.layout.cursor_position,
+    // );
+    // self.ubo_global.upload();
+
+    auto shader_scope = ScopedBind(shader_);
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    // if (self.texture)
+    //   | *texture | { texture.bind(); }
+    // self.shader.setUbo("Global", 0, self.ubo_global.handle);
+    // self.shader.setUbo("Glyphs", 1, self.ubo_glyphs.handle);
+
+    // if (self.document_gen != self.layout_gen) {
+    //   self.layout_gen = self.document_gen;
+    //   if (self.document)
+    //     | document | {
+    //       // const draw_count = self.layout.layout(document.utf16Slice(),
+    //       // self.atlas);
+    //       const draw_count =
+    //           self.layout.layoutTokens(document.utf8Slice(), self.atlas);
+    //       self.draw_count = draw_count;
+    //     }
+    //   else {
+    //     self.draw_count = 0;
+    //   }
+    //   self.vbo.update(self.layout.cells, .{});
+    // }
+
+    vao_->Draw(GL_POINTS, 0, 1);
+  }
 };
 
 Text::Text() : impl_(new TextImpl) {}

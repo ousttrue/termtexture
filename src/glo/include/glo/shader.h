@@ -19,7 +19,7 @@ public:
   static std::shared_ptr<ShaderCompile> VertexShader();
   static std::shared_ptr<ShaderCompile> FragmentShader();
   static std::shared_ptr<ShaderCompile> GeometryShader();
-  bool Compile(const char *src);
+  bool Compile(const char *src, bool use_spirv);
 };
 
 struct Shaders {

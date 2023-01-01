@@ -13,6 +13,10 @@ public:
   VBO &operator=(const VBO &) = delete;
   ~VBO();
   static std::shared_ptr<VBO> Create(const void *data, uint32_t size);
+  static std::shared_ptr<VBO> Create()
+  {
+    return Create(0, 0);
+  }
   void Bind();
   void Unbind();
 };

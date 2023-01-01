@@ -1,11 +1,7 @@
 #include "glo/shader.h"
+#include "spirv_util.h"
 #include <GL/glew.h>
 #include <plog/Log.h>
-
-#define USE_GLSLANG 1
-#ifdef USE_GLSLANG
-#include "spirv_util.h"
-#endif
 
 namespace glo {
 
@@ -23,44 +19,44 @@ std::shared_ptr<ShaderCompile> ShaderCompile::FragmentShader() {
 std::shared_ptr<ShaderCompile> ShaderCompile::GeometryShader() {
   return std::shared_ptr<ShaderCompile>(new ShaderCompile(GL_GEOMETRY_SHADER));
 }
-bool ShaderCompile::Compile(const char *src) {
-#if USE_GLSLANG
-  SPIRV_Initialize();
-  SpirvCompiler *compiler = nullptr;
-  switch (shader_type_) {
-  case GL_VERTEX_SHADER:
-    compiler = SPIRV_COMPILER_Create_VS();
-    break;
+bool ShaderCompile::Compile(const char *src, bool use_spirv) {
+  if (use_spirv) {
+    SPIRV_Initialize();
+    SpirvCompiler *compiler = nullptr;
+    switch (shader_type_) {
+    case GL_VERTEX_SHADER:
+      compiler = SPIRV_COMPILER_Create_VS();
+      break;
 
-  case GL_FRAGMENT_SHADER:
-    compiler = SPIRV_COMPILER_Create_FS();
-    break;
+    case GL_FRAGMENT_SHADER:
+      compiler = SPIRV_COMPILER_Create_FS();
+      break;
 
-  case GL_GEOMETRY_SHADER:
-    compiler = SPIRV_COMPILER_Create_GS();
-    break;
+    case GL_GEOMETRY_SHADER:
+      compiler = SPIRV_COMPILER_Create_GS();
+      break;
 
-  default:
-    PLOG_ERROR << "unknown shader: " << shader_type_;
-    return false;
-  }
+    default:
+      PLOG_ERROR << "unknown shader: " << shader_type_;
+      return false;
+    }
 
-  unsigned int size = 0;
-  auto spirv = SPIRV_COMPILER_Compile(compiler, src, &size);
-  if (!size) {
-    PLOG_ERROR << SPIRV_COMPILER_GetError(compiler) << "\n" << src;
+    unsigned int size = 0;
+    auto spirv = SPIRV_COMPILER_Compile(compiler, src, &size);
+    if (!size) {
+      PLOG_ERROR << SPIRV_COMPILER_GetError(compiler) << "\n" << src;
+      SPIRV_COMPILER_Destroy(compiler);
+      return false;
+    }
+
+    glShaderBinary(1, &shader_, GL_SHADER_BINARY_FORMAT_SPIR_V_ARB, spirv,
+                   size * sizeof(unsigned int));
+    glSpecializeShaderARB(shader_, "main", 0, nullptr, nullptr);
     SPIRV_COMPILER_Destroy(compiler);
-    return false;
+    SPIRV_Finalize();
+  } else {
+    glShaderSource(shader_, 1, &src, nullptr);
   }
-
-  glShaderBinary(1, &shader_, GL_SHADER_BINARY_FORMAT_SPIR_V_ARB, spirv,
-                 size * sizeof(unsigned int));
-  glSpecializeShaderARB(shader_, "main", 0, nullptr, nullptr);
-  SPIRV_COMPILER_Destroy(compiler);
-  SPIRV_Finalize();
-#else
-  glShaderSource(shader_, 1, &src, nullptr);
-#endif
 
   glCompileShader(shader_);
   GLint isCompiled = 0;
