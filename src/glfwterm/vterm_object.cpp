@@ -2,6 +2,7 @@
 #include "vterm.h"
 #include <iostream>
 #include <string.h>
+#include <plog/Log.h>
 
 int VTermObject::damage(VTermRect rect, void *user) {
   return ((VTermObject *)user)
@@ -51,10 +52,12 @@ VTermObject::VTermObject(int _rows, int _cols, int font_width, int font_height,
 VTermObject::~VTermObject() { vterm_free(vterm_); }
 
 void VTermObject::keyboard_unichar(char c, VTermModifier mod) {
+  PLOG_DEBUG << c;
   vterm_keyboard_unichar(vterm_, c, mod);
 }
 
 void VTermObject::keyboard_key(VTermKey key, VTermModifier mod) {
+  PLOG_DEBUG << key;
   vterm_keyboard_key(vterm_, key, mod);
 }
 

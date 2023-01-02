@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <iostream>
 #include <mutex>
+#include <plog/Log.h>
 #include <process.h>
 #include <span>
 #include <stdexcept>
@@ -15,6 +16,35 @@ HRESULT InitializeStartupInfoAttachedToPseudoConsole(STARTUPINFOEXA *, HPCON);
 
 namespace common_pty {
 
+struct LockedInputQueue {
+  std::vector<char> buffer_;
+  std::mutex mtx_;
+
+  void Enqueue(const char *buf, DWORD len) {
+    if (len == 0) {
+      return;
+    }
+
+    std::lock_guard<std::mutex> lock(mtx_);
+    auto size = buffer_.size();
+    buffer_.resize(size + len);
+    memcpy(buffer_.data() + size, buf, len);
+
+    // PLOG_DEBUG << size << " << " << len;
+  }
+
+  auto Dequeue(std::vector<char> &buffer) {
+    std::lock_guard<std::mutex> lock(mtx_);
+
+    std::swap(buffer, buffer_);
+    // buffer = buffer_;
+    buffer_.clear();
+    // if (!buffer.empty()) {
+    //   PLOG_DEBUG << buffer.size();
+    // }
+  }
+};
+
 struct CommonPtyImpl {
   HPCON hpc_ = INVALID_HANDLE_VALUE;
   HANDLE hPipeIn_ = INVALID_HANDLE_VALUE;
@@ -23,9 +53,7 @@ struct CommonPtyImpl {
   STARTUPINFOEXA startupInfo_{};
   PROCESS_INFORMATION piClient_{};
 
-  std::vector<char> buffer_;
-  std::mutex mtx_;
-  std::vector<char> tmp_;
+  LockedInputQueue queue_;
 
   void Shutdown() {
     // Now safe to clean-up client app's process-info & thread
@@ -136,25 +164,6 @@ struct CommonPtyImpl {
     return SUCCEEDED(hr);
   }
 
-  void Enqueue(const char *buf, DWORD len) {
-    if (len == 0) {
-      return;
-    }
-
-    std::lock_guard<std::mutex> lock(mtx_);
-    auto size = buffer_.size();
-    buffer_.resize(size + len);
-    memcpy(buffer_.data() + size, buf, len);
-
-    // std::cout << "Enqueue>>" << std::string_view(buf, len) << std::endl;
-  }
-
-  auto Dequeue(std::vector<char> &buffer) {
-    std::lock_guard<std::mutex> lock(mtx_);
-    std::swap(buffer, buffer_);
-    buffer_.clear();
-  }
-
   bool IsClosed() {
     auto result = WaitForSingleObject(piClient_.hThread, 0);
     return result == WAIT_OBJECT_0;
@@ -180,8 +189,9 @@ struct CommonPtyImpl {
     ResizePseudoConsole(hpc_, size);
   }
 
+  std::vector<char> tmp_;
   std::span<char> Read() {
-    Dequeue(tmp_);
+    queue_.Dequeue(tmp_);
     return {tmp_.begin(), tmp_.end()};
   }
 };
@@ -200,14 +210,7 @@ static void __cdecl PipeListener(LPVOID p) {
   do {
     // Read from the pipe
     fRead = ReadFile(hPipe, szBuffer, BUFF_SIZE, &dwBytesRead, NULL);
-
-    // Write received text to the Console
-    // Note: Write to the Console using WriteFile(hConsole...), not
-    // printf()/puts() to prevent partially-read VT sequences from corrupting
-    // output
-    // WriteFile(hConsole, szBuffer, dwBytesRead, &dwBytesWritten, NULL);
-    impl->Enqueue(szBuffer, dwBytesRead);
-
+    impl->queue_.Enqueue(szBuffer, dwBytesRead);
   } while (fRead && dwBytesRead >= 0);
 
   std::cout << "PipeListener finished." << std::endl;

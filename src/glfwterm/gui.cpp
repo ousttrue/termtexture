@@ -121,7 +121,7 @@ Gui::Gui(GLFWwindow *window, std::string_view glsl_version,
 
     int cols = 80;
     int rows = 24;
-    auto cmd = "pwsh";
+    auto cmd = "cmd.exe";
 
     auto pty = std::make_shared<common_pty::Pty>();
     pty->Launch(rows, cols, cmd);
@@ -141,8 +141,12 @@ Gui::Gui(GLFWwindow *window, std::string_view glsl_version,
              it != io.InputQueueCharacters.end(); ++it) {
           vterm->keyboard_unichar(*it, VTermModifier::VTERM_MOD_NONE);
         }
-        if (ImGui::IsKeyDown(ImGuiKey_Enter)) {
+        if (ImGui::IsKeyPressed(ImGuiKey_Enter)) {
           vterm->keyboard_key(VTERM_KEY_ENTER, VTermModifier::VTERM_MOD_NONE);
+        } else if (ImGui::IsKeyPressed(ImGuiKey_Backspace)) {
+          vterm->keyboard_key(VTERM_KEY_BACKSPACE, VTermModifier::VTERM_MOD_NONE);
+        } else if (ImGui::IsKeyPressed(ImGuiKey_Tab)) {
+          vterm->keyboard_key(VTERM_KEY_TAB, VTermModifier::VTERM_MOD_NONE);
         }
       }
 
@@ -154,7 +158,7 @@ Gui::Gui(GLFWwindow *window, std::string_view glsl_version,
 
       // vterm to screen
       bool ringing;
-      auto &damaged = vterm->new_frame(&ringing, false);
+      auto &damaged = vterm->new_frame(&ringing, true);
       if (!damaged.empty()) {
         for (auto &pos : damaged) {
           if (auto cell = vterm->get_cell(pos)) {
@@ -175,6 +179,7 @@ Gui::Gui(GLFWwindow *window, std::string_view glsl_version,
 
       auto seconds =
           std::chrono::duration<double, std::ratio<1, 1>>(glfwGetTime());
+
       text->Render(
           width, height,
           std::chrono::duration_cast<std::chrono::nanoseconds>(seconds));

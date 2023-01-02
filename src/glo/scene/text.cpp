@@ -20,7 +20,9 @@
 #include <stb_truetype.h>
 
 template <> struct std::hash<glo::Cell> {
-  std::size_t operator()(const glo::Cell &p) const noexcept { return p.value(); }
+  std::size_t operator()(const glo::Cell &p) const noexcept {
+    return p.value();
+  }
 };
 
 auto vs_src = R"(#version 420
@@ -365,20 +367,23 @@ public:
   void SetCell(Cell cell, std::span<uint32_t> codepoints) {
     auto glyph_index = atlas_.GlyphIndexFromCodePoint(codepoints);
     auto found = cellMap_.find(cell);
+    size_t index;
     if (found != cellMap_.end()) {
-      // update
-      cells_[found->second].glyph_index = glyph_index;
+      index = found->second;
     } else {
-      // insert
-      auto index = cells_.size();
+      index = cells_.size();
       cells_.push_back({
           .col = (float)cell.col,
           .row = (float)cell.row,
-          .glyph_index = (float)glyph_index,
-          .color = {1, 1, 1},
       });
       cellMap_.insert(std::make_pair(cell, index));
     }
+
+    auto &v = cells_[index];
+    v.glyph_index = (float)glyph_index;
+    v.color[0] = 1;
+    v.color[1] = 1;
+    v.color[2] = 1;
   }
 
   void Commit() { vao_->GetVBO()->DataFromSpan(std::span{cells_}, true); }
