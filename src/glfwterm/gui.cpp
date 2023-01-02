@@ -1,5 +1,6 @@
 #include "gui.h"
 #include "GLFW/glfw3.h"
+#include "common_pty.h"
 #include "gui_widgets.h"
 #include <__msvc_chrono.hpp>
 #include <chrono>
@@ -111,8 +112,18 @@ Gui::Gui(GLFWwindow *window, std::string_view glsl_version,
     if (!text->Load(fontfile, 30, 1024)) {
       throw std::runtime_error("Text::Load");
     }
-    text->PushText(U"abc");
-    auto fbo_render = [text](int width, int height) {
+
+    auto pty = std::make_shared<common_pty::Pty>();
+    pty->Launch(80, 24, "pwsh");
+
+    auto fbo_render = [text, pty](int width, int height) {
+
+      auto input = pty->Read();
+      if(!input.empty())
+      {
+        
+      }
+
       auto seconds =
           std::chrono::duration<double, std::ratio<1, 1>>(glfwGetTime());
       text->Render(

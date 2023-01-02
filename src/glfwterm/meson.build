@@ -7,6 +7,7 @@ executable('glfwterm', [
     'glfw_window.cpp',
     'gui.cpp',
     'gui_widgets.cpp',
+    'common_pty_windows.cpp',
 ],
     install: true,
     dependencies: [glfw3_dep, imgui_dep, gl_dep, plog_dep, glo_dep],
