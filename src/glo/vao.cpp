@@ -7,11 +7,11 @@ namespace glo {
 //
 // VAO
 //
-VAO::VAO(const std::shared_ptr<VBO> &vbo) : vbo_(vbo) {
+VAO::VAO(const std::shared_ptr<::glo::VBO> &vbo) : vbo_(vbo) {
   glGenVertexArrays(1, &vao_);
 }
 VAO::~VAO() { glDeleteVertexArrays(1, &vao_); }
-std::shared_ptr<VAO> VAO::Create(const std::shared_ptr<VBO> vbo,
+std::shared_ptr<VAO> VAO::Create(const std::shared_ptr<::glo::VBO> vbo,
                                  std::span<VertexLayout> layouts) {
   auto ptr = std::shared_ptr<VAO>(new VAO(vbo));
 
@@ -29,7 +29,9 @@ std::shared_ptr<VAO> VAO::Create(const std::shared_ptr<VBO> vbo,
 void VAO::Bind() { glBindVertexArray(vao_); }
 void VAO::Unbind() { glBindVertexArray(0); }
 void VAO::Draw(int topology, int offset, int count) {
+  Bind();
   glDrawArrays(topology, offset, count);
+  Unbind();
 }
 
 } // namespace glo

@@ -1,5 +1,6 @@
 #pragma once
 #include "vbo.h"
+#include <memory>
 #include <span>
 #include <string>
 
@@ -29,6 +30,7 @@ public:
   VAO &operator=(const VAO &) = delete;
   static std::shared_ptr<VAO> Create(const std::shared_ptr<VBO> vbo,
                                      std::span<VertexLayout> layouts);
+  std::shared_ptr<VBO> GetVBO() { return vbo_; }
   void Bind();
   void Unbind();
   void Draw(int topology, int offset, int count);

@@ -7,8 +7,11 @@
 #include "glo/vao.h"
 #include <chrono>
 #include <gl/glew.h>
+#include <ios>
 #include <memory>
 #include <plog/Log.h>
+#include <stdint.h>
+#include <string>
 
 #define STB_TRUETYPE_IMPLEMENTATION
 #define STBTT_STATIC
@@ -130,13 +133,12 @@ struct FontAtlas {
   float linegaps[GLYPH_COUNT];
   stbtt_packedchar glyphs[GLYPH_COUNT];
 
-  // pub fn glyphIndexFromCodePoint(self: Self, c: u16) usize {
-  //     _ = self;
-  //     if (c < 32) {
-  //         return 0;
-  //     }
-  //     return c - 32;
-  // }
+  size_t GlyphIndexFromCodePoint(char32_t codepoint) {
+    if (codepoint < 32) {
+      return 0;
+    }
+    return codepoint - 32;
+  }
 
   // https://gist.github.com/vassvik/f442a4cc6127bc7967c583a12b148ac9
   std::shared_ptr<Texture> LoadFont(std::string_view path, float font_size,
@@ -247,6 +249,20 @@ struct Global {
   float atlasSize[2];
   float ascent;
   float descent;
+
+  void UpdateProjection(int width, int height, int cell_width, int cell_height
+                        // CursorPosition scroll_top_left: ,
+                        // CursorPosition cursor_position: ,
+  ) {
+    auto cols = width / cell_width;
+    auto rows = height / cell_height;
+
+    auto m = projection;
+    m[0] = 2.0 / width;
+    m[5] = -(2.0 / height);
+    m[12] = -1 - cell_width / width * 2;
+    m[13] = 1 + cell_height / height * 2;
+  }
 };
 
 template <typename T> struct TypedUBO {
@@ -258,6 +274,13 @@ template <typename T> struct TypedUBO {
   uint32_t Handle() { return ubo->Handle(); }
 };
 
+struct CellVertex {
+  float col;
+  float row;
+  float glyph_index;
+  float color[3];
+};
+
 class TextImpl {
   std::shared_ptr<VAO> vao_;
   TypedUBO<Global> ubo_global_;
@@ -267,6 +290,7 @@ class TextImpl {
   std::shared_ptr<Texture> font_;
   int cell_width_ = 16;
   int cell_height_ = 16;
+  std::vector<CellVertex> cells_;
 
 public:
   bool Load() {
@@ -304,8 +328,8 @@ public:
   }
 
   void LoadFont(std::string_view path, float font_size, uint32_t atlas_size) {
-    cell_width_ = font_size / 2;
-    cell_height_ = font_size;
+    cell_width_ = static_cast<int>(font_size / 2);
+    cell_height_ = static_cast<int>(font_size);
     font_ = atlas_.LoadFont(path, font_size, atlas_size);
     for (int i = 0; i < GLYPH_COUNT; ++i) {
       auto &g = atlas_.glyphs[i];
@@ -322,43 +346,57 @@ public:
     ubo_global_.buffer.descent = atlas_.descents[0];
   }
 
+  void PushText(const std::u32string &codepoints) {
+    for (auto codepoint : codepoints) {
+      auto index = cells_.size();
+      auto glyph_index = atlas_.GlyphIndexFromCodePoint(codepoint);
+      cells_.push_back({.col = (float)index,
+                        .row = 0,
+                        .glyph_index = (float)glyph_index,
+                        .color = {1, 1, 1}});
+    }
+    vao_->GetVBO()->DataFromSpan(std::span{cells_}, true);
+  }
+
   void Render(int width, int height, std::chrono::nanoseconds duration) {
     if (!font_) {
       return;
     }
 
-    // ubo_global
-    ubo_global_.buffer.cellSize[0] = (float)cell_width_;
-    ubo_global_.buffer.cellSize[1] = (float)cell_height_;
-    ubo_global_.buffer.screenSize[0] = (float)width;
-    ubo_global_.buffer.screenSize[1] = (float)height;
-    // self.scroll_top_left = screenToDevice(
-    //     &self.ubo_global.buffer.projection,
-    //     @intCast(i32, mouse_input.width),
-    //     @intCast(i32, mouse_input.height),
-    //     @intCast(i32, self.cell_width),
-    //     @intCast(i32, self.cell_height),
-    //     self.scroll_top_left,
-    //     self.layout.cursor_position,
-    // );
-    ubo_global_.Upload();
+    {
+      // ubo_global
+      ubo_global_.buffer.cellSize[0] = (float)cell_width_;
+      ubo_global_.buffer.cellSize[1] = (float)cell_height_;
+      ubo_global_.buffer.screenSize[0] = (float)width;
+      ubo_global_.buffer.screenSize[1] = (float)height;
+      ubo_global_.buffer.UpdateProjection(width, height, cell_width_,
+                                          cell_height_);
+      ubo_global_.Upload();
+    }
 
-    auto shader_scope = ScopedBind(shader_);
-
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    shader_->SetUBO(0, ubo_global_.Handle());
-    shader_->SetUBO(1, ubo_glyphs_.Handle());
-    ScopedBind(font_);
-
-    vao_->Draw(GL_POINTS, 0, 1);
+    {
+      auto shader_scope = ScopedBind(shader_);
+      auto texture_scope = ScopedBind(font_);
+      glEnable(GL_BLEND);
+      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+      {
+        shader_->SetUBO(0, ubo_global_.Handle());
+        shader_->SetUBO(1, ubo_glyphs_.Handle());
+        vao_->Draw(GL_POINTS, 0, cells_.size());
+      }
+    }
   }
 };
 
+//
+// Text
+//
 Text::Text() : impl_(new TextImpl) {}
+
 Text::~Text() { delete (impl_); }
+
 std::shared_ptr<Text> Text::Create() { return std::shared_ptr<Text>(new Text); }
+
 bool Text::Load(const std::string &path, float font_size, uint32_t atlas_size) {
   if (!impl_->Load()) {
     return false;
@@ -366,6 +404,11 @@ bool Text::Load(const std::string &path, float font_size, uint32_t atlas_size) {
   impl_->LoadFont(path, font_size, atlas_size);
   return true;
 }
+
+void Text::PushText(const std::u32string &unicodes) {
+  impl_->PushText(unicodes);
+}
+
 void Text::Render(int width, int height, std::chrono::nanoseconds duration) {
   impl_->Render(width, height, duration);
 }

@@ -111,6 +111,7 @@ Gui::Gui(GLFWwindow *window, std::string_view glsl_version,
     if (!text->Load(fontfile, 30, 1024)) {
       throw std::runtime_error("Text::Load");
     }
+    text->PushText(U"abc");
     auto fbo_render = [text](int width, int height) {
       auto seconds =
           std::chrono::duration<double, std::ratio<1, 1>>(glfwGetTime());

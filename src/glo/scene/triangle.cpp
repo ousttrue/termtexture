@@ -14,12 +14,14 @@
 #include <plog/Log.h>
 #include <stdint.h>
 
-static const struct {
+struct Vertex {
   float x, y;
   float r, g, b;
-} vertices[3] = {{-0.6f, -0.4f, 1.f, 0.f, 0.f},
-                 {0.6f, -0.4f, 0.f, 1.f, 0.f},
-                 {0.f, 0.6f, 0.f, 0.f, 1.f}};
+};
+
+static const Vertex vertices[3] = {{-0.6f, -0.4f, 1.f, 0.f, 0.f},
+                                   {0.6f, -0.4f, 0.f, 1.f, 0.f},
+                                   {0.f, 0.6f, 0.f, 0.f, 1.f}};
 
 auto vertex_shader_text = R"(#version 450
 layout (location = 0) in vec2 vPos;
@@ -79,7 +81,8 @@ public:
     ubo_ = UBO::Create();
 
     // vertex buffer
-    auto vbo = VBO::Create(vertices, sizeof(vertices));
+    auto vbo = VBO::Create();
+    vbo->SetData(sizeof(vertices), vertices);
 
     // float x, y;
     // float r, g, b;
@@ -113,9 +116,8 @@ public:
 
     {
       auto shader_bind = ScopedBind(shader_);
-      auto vao_bind = ScopedBind(vao_);
       ubo_->BindBase(0);
-      glDrawArrays(GL_TRIANGLES, 0, 3);
+      vao_->Draw(GL_TRIANGLES, 0, 3);
     }
   }
 };
