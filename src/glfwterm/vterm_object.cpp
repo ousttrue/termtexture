@@ -13,7 +13,7 @@ int VTermObject::moverect(VTermRect dest, VTermRect src, void *user) {
 }
 
 int VTermObject::movecursor(VTermPos pos, VTermPos oldpos, int visible,
-                         void *user) {
+                            void *user) {
   return ((VTermObject *)user)->movecursor(pos, oldpos, visible);
 }
 
@@ -28,7 +28,8 @@ int VTermObject::resize(int rows, int cols, void *user) {
   return ((VTermObject *)user)->resize(rows, cols);
 }
 
-int VTermObject::sb_pushline(int cols, const VTermScreenCell *cells, void *user) {
+int VTermObject::sb_pushline(int cols, const VTermScreenCell *cells,
+                             void *user) {
   return ((VTermObject *)user)->sb_pushline(cols, cells);
 }
 
@@ -37,7 +38,7 @@ int VTermObject::sb_popline(int cols, VTermScreenCell *cells, void *user) {
 }
 
 VTermObject::VTermObject(int _rows, int _cols, int font_width, int font_height,
-                   VTermOutputCallback out, void *user) {
+                         VTermOutputCallback out, void *user) {
   vterm_ = vterm_new(_rows, _cols);
   vterm_set_utf8(vterm_, 1);
   vterm_output_set_callback(vterm_, out, user);
@@ -61,22 +62,22 @@ void VTermObject::input_write(const char *bytes, size_t len) {
   vterm_input_write(vterm_, bytes, len);
 }
 
-const PosSet &VTermObject::new_frame(bool *ringing) {
+const PosSet &VTermObject::new_frame(bool *ringing, bool check_damaed) {
   *ringing = ringing_;
   ringing_ = false;
 
-#if 1
-  std::swap(damaged_, tmp_);
-#else
-  tmp_.clear();
-  int rows, cols;
-  vterm_get_size(vterm_, &rows, &cols);
-  for (int row = 0; row < rows; ++row) {
-    for (int col = 0; col < cols; ++col) {
-      tmp_.insert({.row = row, .col = col});
+  if (check_damaed) {
+    std::swap(damaged_, tmp_);
+  } else {
+    tmp_.clear();
+    int rows, cols;
+    vterm_get_size(vterm_, &rows, &cols);
+    for (int row = 0; row < rows; ++row) {
+      for (int col = 0; col < cols; ++col) {
+        tmp_.insert({.row = row, .col = col});
+      }
     }
   }
-#endif
   damaged_.clear();
   return tmp_;
 }
@@ -106,7 +107,8 @@ void VTermObject::set_rows_cols(int rows, int cols) {
   vterm_set_size(vterm_, rows, cols);
 }
 
-int VTermObject::damage(int start_row, int start_col, int end_row, int end_col) {
+int VTermObject::damage(int start_row, int start_col, int end_row,
+                        int end_col) {
   // std::cout << "damage: (" << start_row << ", " << start_col << ")-(" <<
   // end_row
   //           << "," << end_col << ")" << std::endl;

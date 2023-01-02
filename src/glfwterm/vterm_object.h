@@ -31,12 +31,12 @@ class VTermObject {
 
 public:
   VTermObject(int _rows, int _cols, int font_width, int font_height,
-           VTermOutputCallback out, void *user);
+              VTermOutputCallback out, void *user);
   ~VTermObject();
   void input_write(const char *bytes, size_t len);
   void keyboard_unichar(char c, VTermModifier mod);
   void keyboard_key(VTermKey key, VTermModifier mod);
-  const PosSet &new_frame(bool *ringing);
+  const PosSet &new_frame(bool *ringing, bool check_damaged = true);
   VTermScreenCell *get_cell(VTermPos pos) const;
   VTermScreenCell *get_cursor(VTermPos *pos) const;
   void set_rows_cols(int rows, int cols);

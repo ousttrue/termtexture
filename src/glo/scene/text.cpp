@@ -12,10 +12,16 @@
 #include <plog/Log.h>
 #include <stdint.h>
 #include <string>
+#include <type_traits>
+#include <unordered_map>
 
 #define STB_TRUETYPE_IMPLEMENTATION
 #define STBTT_STATIC
 #include <stb_truetype.h>
+
+template <> struct std::hash<glo::Cell> {
+  std::size_t operator()(const glo::Cell &p) const noexcept { return p.value(); }
+};
 
 auto vs_src = R"(#version 420
 in vec3 i_Pos;
@@ -133,7 +139,11 @@ struct FontAtlas {
   float linegaps[GLYPH_COUNT];
   stbtt_packedchar glyphs[GLYPH_COUNT];
 
-  size_t GlyphIndexFromCodePoint(char32_t codepoint) {
+  size_t GlyphIndexFromCodePoint(std::span<uint32_t> codepoints) {
+    if (codepoints.empty()) {
+      return 0;
+    }
+    auto codepoint = codepoints[0];
     if (codepoint < 32) {
       return 0;
     }
@@ -291,6 +301,7 @@ class TextImpl {
   int cell_width_ = 16;
   int cell_height_ = 16;
   std::vector<CellVertex> cells_;
+  std::unordered_map<Cell, size_t, std::hash<Cell>> cellMap_;
 
 public:
   bool Load() {
@@ -346,33 +357,28 @@ public:
     ubo_global_.buffer.descent = atlas_.descents[0];
   }
 
-  void Clear() { cells_.clear(); }
-
-  void PushText(const std::u32string &codepoints) {
-    for (auto codepoint : codepoints) {
-      auto index = cells_.size();
-      auto glyph_index = atlas_.GlyphIndexFromCodePoint(codepoint);
-      cells_.push_back({.col = (float)index,
-                        .row = 0,
-                        .glyph_index = (float)glyph_index,
-                        .color = {1, 1, 1}});
-    }
-    Commit();
+  void Clear() {
+    cellMap_.clear();
+    cells_.clear();
   }
 
-  void SetCell(int row, int col, std::span<uint32_t> codepoints) {
-    if (codepoints[0] == 0) {
-      return;
+  void SetCell(Cell cell, std::span<uint32_t> codepoints) {
+    auto glyph_index = atlas_.GlyphIndexFromCodePoint(codepoints);
+    auto found = cellMap_.find(cell);
+    if (found != cellMap_.end()) {
+      // update
+      cells_[found->second].glyph_index = glyph_index;
+    } else {
+      // insert
+      auto index = cells_.size();
+      cells_.push_back({
+          .col = (float)cell.col,
+          .row = (float)cell.row,
+          .glyph_index = (float)glyph_index,
+          .color = {1, 1, 1},
+      });
+      cellMap_.insert(std::make_pair(cell, index));
     }
-    auto glyph_index = atlas_.GlyphIndexFromCodePoint(codepoints[0]);
-    PLOG_DEBUG << row << "," << col << ": " << codepoints[0] << " => "
-               << glyph_index;
-    cells_.push_back({
-        .col = (float)col,
-        .row = (float)row,
-        .glyph_index = (float)glyph_index,
-        .color = {1, 1, 1},
-    });
   }
 
   void Commit() { vao_->GetVBO()->DataFromSpan(std::span{cells_}, true); }
@@ -426,12 +432,8 @@ bool Text::Load(const std::string &path, float font_size, uint32_t atlas_size) {
 
 void Text::Clear() { impl_->Clear(); }
 
-void Text::SetCell(int row, int col, std::span<uint32_t> codepoints) {
-  impl_->SetCell(row, col, codepoints);
-}
-
-void Text::PushText(const std::u32string &unicodes) {
-  impl_->PushText(unicodes);
+void Text::SetCell(Cell cell, std::span<uint32_t> codepoints) {
+  impl_->SetCell(cell, codepoints);
 }
 
 void Text::Commit() { impl_->Commit(); }

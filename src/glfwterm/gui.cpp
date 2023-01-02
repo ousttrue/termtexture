@@ -2,6 +2,8 @@
 #include "GLFW/glfw3.h"
 #include "common_pty.h"
 #include "gui_widgets.h"
+#include "vterm.h"
+#include "vterm_keycodes.h"
 #include "vterm_object.h"
 #include <__msvc_chrono.hpp>
 #include <chrono>
@@ -132,6 +134,18 @@ Gui::Gui(GLFWwindow *window, std::string_view glsl_version,
         pty.get());
 
     auto fbo_render = [text, pty, vterm](int width, int height) {
+      // keyboard input to vterm
+      {
+        auto &io = ImGui::GetIO();
+        for (auto it = io.InputQueueCharacters.begin();
+             it != io.InputQueueCharacters.end(); ++it) {
+          vterm->keyboard_unichar(*it, VTermModifier::VTERM_MOD_NONE);
+        }
+        if (ImGui::IsKeyDown(ImGuiKey_Enter)) {
+          vterm->keyboard_key(VTERM_KEY_ENTER, VTermModifier::VTERM_MOD_NONE);
+        }
+      }
+
       // pty to vterm
       auto input = pty->Read();
       if (!input.empty()) {
@@ -140,13 +154,20 @@ Gui::Gui(GLFWwindow *window, std::string_view glsl_version,
 
       // vterm to screen
       bool ringing;
-      auto &damaged = vterm->new_frame(&ringing);
+      auto &damaged = vterm->new_frame(&ringing, false);
       if (!damaged.empty()) {
-        text->Clear();
         for (auto &pos : damaged) {
           if (auto cell = vterm->get_cell(pos)) {
-            std::span<uint32_t> span(cell->chars, VTERM_MAX_CHARS_PER_CELL);
-            text->SetCell(pos.row, pos.col, span);
+            int i = 0;
+            for (; i < VTERM_MAX_CHARS_PER_CELL && cell->chars[i]; ++i) {
+            }
+            std::span<uint32_t> span(cell->chars, i);
+            text->SetCell(
+                {
+                    .row = (uint16_t)pos.row,
+                    .col = (uint16_t)pos.col,
+                },
+                span);
           }
         }
         text->Commit();
