@@ -346,6 +346,8 @@ public:
     ubo_global_.buffer.descent = atlas_.descents[0];
   }
 
+  void Clear() { cells_.clear(); }
+
   void PushText(const std::u32string &codepoints) {
     for (auto codepoint : codepoints) {
       auto index = cells_.size();
@@ -355,8 +357,25 @@ public:
                         .glyph_index = (float)glyph_index,
                         .color = {1, 1, 1}});
     }
-    vao_->GetVBO()->DataFromSpan(std::span{cells_}, true);
+    Commit();
   }
+
+  void SetCell(int row, int col, std::span<uint32_t> codepoints) {
+    if (codepoints[0] == 0) {
+      return;
+    }
+    auto glyph_index = atlas_.GlyphIndexFromCodePoint(codepoints[0]);
+    PLOG_DEBUG << row << "," << col << ": " << codepoints[0] << " => "
+               << glyph_index;
+    cells_.push_back({
+        .col = (float)col,
+        .row = (float)row,
+        .glyph_index = (float)glyph_index,
+        .color = {1, 1, 1},
+    });
+  }
+
+  void Commit() { vao_->GetVBO()->DataFromSpan(std::span{cells_}, true); }
 
   void Render(int width, int height, std::chrono::nanoseconds duration) {
     if (!font_) {
@@ -405,9 +424,17 @@ bool Text::Load(const std::string &path, float font_size, uint32_t atlas_size) {
   return true;
 }
 
+void Text::Clear() { impl_->Clear(); }
+
+void Text::SetCell(int row, int col, std::span<uint32_t> codepoints) {
+  impl_->SetCell(row, col, codepoints);
+}
+
 void Text::PushText(const std::u32string &unicodes) {
   impl_->PushText(unicodes);
 }
+
+void Text::Commit() { impl_->Commit(); }
 
 void Text::Render(int width, int height, std::chrono::nanoseconds duration) {
   impl_->Render(width, height, duration);

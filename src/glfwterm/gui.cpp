@@ -2,6 +2,7 @@
 #include "GLFW/glfw3.h"
 #include "common_pty.h"
 #include "gui_widgets.h"
+#include "vterm_object.h"
 #include <__msvc_chrono.hpp>
 #include <chrono>
 #include <glo/scene/text.h>
@@ -10,6 +11,7 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 #include <stdexcept>
+#include <stdint.h>
 #include <stdio.h>
 #if defined(IMGUI_IMPL_OPENGL_ES2)
 #include <GLES2/gl2.h>
@@ -108,20 +110,46 @@ Gui::Gui(GLFWwindow *window, std::string_view glsl_version,
   }
 
   {
+    int font_width = 15;
+    int font_height = 30;
     auto text = glo::Text::Create();
-    if (!text->Load(fontfile, 30, 1024)) {
+    if (!text->Load(fontfile, font_height, 1024)) {
       throw std::runtime_error("Text::Load");
     }
 
+    int cols = 80;
+    int rows = 24;
+    auto cmd = "pwsh";
+
     auto pty = std::make_shared<common_pty::Pty>();
-    pty->Launch(80, 24, "pwsh");
+    pty->Launch(rows, cols, cmd);
 
-    auto fbo_render = [text, pty](int width, int height) {
+    auto vterm = std::make_shared<VTermObject>(
+        rows, cols, font_width, font_height,
+        [](const char *s, size_t len, void *user) {
+          ((common_pty::Pty *)user)->Write(s, len);
+        },
+        pty.get());
 
+    auto fbo_render = [text, pty, vterm](int width, int height) {
+      // pty to vterm
       auto input = pty->Read();
-      if(!input.empty())
-      {
-        
+      if (!input.empty()) {
+        vterm->input_write(input.data(), input.size());
+      }
+
+      // vterm to screen
+      bool ringing;
+      auto &damaged = vterm->new_frame(&ringing);
+      if (!damaged.empty()) {
+        text->Clear();
+        for (auto &pos : damaged) {
+          if (auto cell = vterm->get_cell(pos)) {
+            std::span<uint32_t> span(cell->chars, VTERM_MAX_CHARS_PER_CELL);
+            text->SetCell(pos.row, pos.col, span);
+          }
+        }
+        text->Commit();
       }
 
       auto seconds =
