@@ -1,18 +1,29 @@
 #pragma once
+#include <chrono>
 #include <functional>
 #include <list>
+#include <ratio>
 #include <string_view>
 
 class Gui {
   struct GuiWindow {
-    std::function<void(bool *pShow)> on_updated;
+
+    std::function<void(bool *pShow)> on_show;
     bool show = true;
     bool use_show = true;
-    void Update() {
+    void Show() {
       if (!use_show) {
-        on_updated(nullptr);
+        on_show(nullptr);
       } else if (show) {
-        on_updated(&show);
+        on_show(&show);
+      }
+    }
+
+    std::function<void(std::chrono::nanoseconds time)>
+        on_update;
+    void Update(std::chrono::nanoseconds time) {
+      if (on_update) {
+        on_update(time);
       }
     }
   };
@@ -26,5 +37,5 @@ public:
   ~Gui();
   Gui(const Gui &) = delete;
   Gui &operator=(const Gui &) = delete;
-  void UpdateRender();
+  void UpdateRender(std::chrono::nanoseconds time);
 };

@@ -57,8 +57,8 @@ int main(int argc, char **argv) {
 
   Gui gui(window_handle, window.glsl_version(), fontfile);
 
-  while (window.BeginFrame(gui.clear_color)) {
-    gui.UpdateRender();
+  while (auto time = window.BeginFrame(gui.clear_color)) {
+    gui.UpdateRender(time.value());
     window.EndFrame();
   }
 

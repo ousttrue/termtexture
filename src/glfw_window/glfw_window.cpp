@@ -1,7 +1,10 @@
 #include "glfw_window.h"
 #include "plog/Log.h"
 #include <GLFW/glfw3.h> // Will drag system OpenGL headers
+#include <chrono>
+#include <optional>
 #include <plog/Logger.h>
+#include <ratio>
 #include <stdexcept>
 
 static void glfw_error_callback(int error, const char *description) {
@@ -62,9 +65,10 @@ GLFWwindow *Window::CreaeWindow(int width, int height, const char *title) {
   return window_;
 }
 
-bool Window::BeginFrame(const float clear_color[4]) {
+std::optional<std::chrono::nanoseconds>
+Window::BeginFrame(const float clear_color[4]) {
   if (glfwWindowShouldClose(window_)) {
-    return false;
+    return {};
   }
   // Poll and handle events (inputs, window resize, etc.)
   // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to
@@ -87,7 +91,8 @@ bool Window::BeginFrame(const float clear_color[4]) {
                clear_color[2] * clear_color[3], clear_color[3]);
   glClear(GL_COLOR_BUFFER_BIT);
 
-  return true;
+  std::chrono::duration<double, std::ratio<1, 1>> time(glfwGetTime());
+  return std::chrono::duration_cast<std::chrono::nanoseconds>(time);
 }
 
 void Window::EndFrame() { glfwSwapBuffers(window_); }

@@ -1,6 +1,7 @@
 #include "gui.h"
 #include "GLFW/glfw3.h"
 #include "common_pty.h"
+#include "glfw_window.h"
 #include "gui_widgets.h"
 #include "plog/Log.h"
 #include <__msvc_chrono.hpp>
@@ -84,29 +85,37 @@ Gui::Gui(GLFWwindow *window, std::string_view glsl_version,
 
   // 2. Show a simple window that we create ourselves. We use a Begin/End pair
   // to created a named window.
-  windows_.push_back({.on_updated =
-                          simple_window{
-                              .name_ = "Hello, world!",
-                              .show_demo_window_ = &windows_.front().show,
-                              .show_another_window_ = &windows_.back().show,
-                              .clear_color = clear_color,
-                          },
-                      .use_show = false});
+  windows_.push_back({
+      .on_show =
+          simple_window{
+              .name_ = "Hello, world!",
+              .show_demo_window_ = &windows_.front().show,
+              .show_another_window_ = &windows_.back().show,
+              .clear_color = clear_color,
+          },
+      .use_show = false,
+  });
 
   {
     auto triangle = glo::Triangle::Create();
     if (!triangle->Load()) {
       throw std::runtime_error("Triangle::Load");
     }
-    auto fbo_render = [triangle](int width, int height) {
-      auto seconds =
-          std::chrono::duration<double, std::ratio<1, 1>>(glfwGetTime());
-      triangle->Render(
-          width, height,
-          std::chrono::duration_cast<std::chrono::nanoseconds>(seconds));
+    auto fbo_render = [triangle](int width, int height,
+                                 std::chrono::nanoseconds time) {
+      triangle->Render(width, height, time);
     };
-    windows_.push_back(
-        {.on_updated = fbo_window("triangle", fbo_render), .use_show = false});
+
+    auto fbo_window = FboWindow::Create("triangle", fbo_render);
+
+    windows_.push_back(GuiWindow{
+        .on_show = [fbo_window](bool *p_open) { fbo_window->show(p_open); },
+        .use_show = false,
+        .on_update =
+            [fbo_window](std::chrono::nanoseconds time) {
+              fbo_window->update(time);
+            },
+    });
   }
 
   {
@@ -122,7 +131,8 @@ Gui::Gui(GLFWwindow *window, std::string_view glsl_version,
       PLOG_ERROR << "fail: " << cmd;
     }
 
-    auto fbo_render = [term](int width, int height) {
+    auto fbo_render = [term](int width, int height,
+                             std::chrono::nanoseconds time) {
       // keyboard input to vterm
       {
         auto &io = ImGui::GetIO();
@@ -133,22 +143,24 @@ Gui::Gui(GLFWwindow *window, std::string_view glsl_version,
         if (ImGui::IsKeyPressed(ImGuiKey_Enter)) {
           term->KeyboardKey(VTERM_KEY_ENTER, VTermModifier::VTERM_MOD_NONE);
         } else if (ImGui::IsKeyPressed(ImGuiKey_Backspace)) {
-          term->KeyboardKey(VTERM_KEY_BACKSPACE,
-                              VTermModifier::VTERM_MOD_NONE);
+          term->KeyboardKey(VTERM_KEY_BACKSPACE, VTermModifier::VTERM_MOD_NONE);
         } else if (ImGui::IsKeyPressed(ImGuiKey_Tab)) {
           term->KeyboardKey(VTERM_KEY_TAB, VTermModifier::VTERM_MOD_NONE);
         }
       }
 
-      auto seconds =
-          std::chrono::duration<double, std::ratio<1, 1>>(glfwGetTime());
-
-      term->Render(
-          width, height,
-          std::chrono::duration_cast<std::chrono::nanoseconds>(seconds));
+      term->Render(width, height, time);
     };
-    windows_.push_back(
-        {.on_updated = fbo_window("text", fbo_render), .use_show = false});
+
+    auto fbo_window = FboWindow::Create("text", fbo_render);
+    windows_.push_back({
+        .on_show = [fbo_window](bool *p_open) { fbo_window->show(p_open); },
+        .use_show = false,
+        .on_update =
+            [fbo_window](std::chrono::nanoseconds time) {
+              fbo_window->update(time);
+            },
+    });
   }
 }
 
@@ -159,14 +171,16 @@ Gui::~Gui() {
   ImGui::DestroyContext();
 }
 
-void Gui::UpdateRender() {
+void Gui::UpdateRender(std::chrono::nanoseconds time) {
   // Start the Dear ImGui frame
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
 
+  // std::chrono::duration_cast<std::chrono::nanoseconds>(seconds)
   for (auto &window : windows_) {
-    window.Update();
+    window.Update(time);
+    window.Show();
   }
 
   // Rendering

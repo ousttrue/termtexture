@@ -1,4 +1,5 @@
 #pragma once
+#include <chrono>
 #include <functional>
 #include <glo/fbo.h>
 #include <imgui.h>
@@ -19,8 +20,9 @@ namespace glo {
 class FboRenderer;
 }
 
-struct fbo_window {
-  using RenderFunc = std::function<void(int, int)>;
+class FboWindow {
+  using RenderFunc =
+      std::function<void(int width, int height, std::chrono::nanoseconds time)>;
 
   std::string name_;
   std::shared_ptr<class glo::FboRenderer> fbo_;
@@ -28,10 +30,20 @@ struct fbo_window {
   ImVec4 tint_ = {1, 1, 1, 1};
   float clear_color_[4] = {0.3f, 0.2f, 0.1f, 1.0f};
   RenderFunc render_;
+  std::chrono::nanoseconds time_;
 
-  fbo_window(std::string_view name, const RenderFunc &render);
-  void operator()(bool *p_open);
+  FboWindow(std::string_view name, const RenderFunc &render);
+
+public:
+  ~FboWindow();
+  FboWindow(const FboWindow &) = delete;
+  FboWindow &operator=(const FboWindow &) = delete;
+  static std::shared_ptr<FboWindow> Create(std::string_view name,
+                                           const RenderFunc &render);
+  void show(bool *p_open);
+  void update(std::chrono::nanoseconds time) { time_ = time; }
 
 private:
-  void show_fbo(float x, float y, float w, float h);
+  void render_fbo(float x, float y, float w, float h,
+                  std::chrono::nanoseconds time);
 };

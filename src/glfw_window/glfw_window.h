@@ -1,4 +1,7 @@
 #pragma once
+#include <chrono>
+#include <optional>
+#include <ratio>
 #include <string>
 #include <string_view>
 
@@ -11,6 +14,6 @@ public:
   ~Window();
   std::string_view glsl_version() const { return glsl_version_; }
   struct GLFWwindow *CreaeWindow(int width, int height, const char *title);
-  bool BeginFrame(const float clear_color[4]);
+  std::optional<std::chrono::nanoseconds> BeginFrame(const float clear_color[4]);
   void EndFrame();
 };

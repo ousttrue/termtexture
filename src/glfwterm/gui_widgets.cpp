@@ -48,28 +48,21 @@ void simple_window::operator()(bool *) {
   ImGui::End();
 }
 
-void fbo_window::operator()(bool *p_open) {
-  if (p_open && !*p_open) {
-    return;
-  }
-
-  ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0, 0});
-  if (ImGui::Begin(name_.c_str(), p_open,
-                   ImGuiWindowFlags_NoScrollbar |
-                       ImGuiWindowFlags_NoScrollWithMouse)) {
-    auto [x, y] = ImGui::GetWindowPos();
-    y += ImGui::GetFrameHeight();
-    auto [w, h] = ImGui::GetContentRegionAvail();
-    show_fbo(x, y, w, h);
-  }
-  ImGui::End();
-  ImGui::PopStyleVar();
-}
-
-fbo_window::fbo_window(std::string_view name, const RenderFunc &render)
+//
+// FboWindow
+//
+FboWindow::FboWindow(std::string_view name, const RenderFunc &render)
     : name_(name), fbo_(new glo::FboRenderer), render_(render) {}
 
-void fbo_window::show_fbo(float x, float y, float w, float h) {
+FboWindow::~FboWindow() {}
+
+std::shared_ptr<FboWindow> FboWindow::Create(std::string_view name,
+                                             const RenderFunc &render) {
+  return std::shared_ptr<FboWindow>(new FboWindow(name, render));
+}
+
+void FboWindow::render_fbo(float x, float y, float w, float h,
+                           std::chrono::nanoseconds time) {
   assert(w);
   assert(h);
   auto texture =
@@ -91,9 +84,27 @@ void fbo_window::show_fbo(float x, float y, float w, float h) {
     // self.mouse_event.process(mouse_input)
 
     if (render_) {
-      render_(w, h);
+      render_(w, h, time);
     }
 
     fbo_->End();
   }
+}
+
+void FboWindow::show(bool *p_open) {
+  if (p_open && !*p_open) {
+    return;
+  }
+
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0, 0});
+  if (ImGui::Begin(name_.c_str(), p_open,
+                   ImGuiWindowFlags_NoScrollbar |
+                       ImGuiWindowFlags_NoScrollWithMouse)) {
+    auto [x, y] = ImGui::GetWindowPos();
+    y += ImGui::GetFrameHeight();
+    auto [w, h] = ImGui::GetContentRegionAvail();
+    render_fbo(x, y, w, h, time_);
+  }
+  ImGui::End();
+  ImGui::PopStyleVar();
 }
