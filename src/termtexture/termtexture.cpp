@@ -7,7 +7,7 @@
 namespace termtexture {
 
 class TermTextureImpl {
-  std::shared_ptr<CellGrid> text_;
+  std::shared_ptr<CellGrid> grid_;
   int cell_width_;
   int cell_height_;
   int rows_ = 24;
@@ -18,7 +18,7 @@ class TermTextureImpl {
 public:
   std::shared_ptr<VTermObject> vterm_;
   TermTextureImpl() {
-    text_ = CellGrid::Create();
+    grid_ = CellGrid::Create();
     vterm_ = std::shared_ptr<VTermObject>(new VTermObject(
         rows_, cols_,
         [](const char *s, size_t len, void *user) {
@@ -30,7 +30,7 @@ public:
   bool LoadFont(std::string_view fontfile, int cell_width, int cell_height) {
     cell_width_ = cell_width;
     cell_height_ = cell_height;
-    return text_->Load(fontfile, cell_height, 1024);
+    return grid_->Load(fontfile, cell_height, 1024);
   }
 
   void Launch(const char *cmd) { pty_.Launch(rows_, cols_, cmd); }
@@ -45,6 +45,7 @@ public:
       cols_ = cols;
       pty_.NotifyTermSize(rows, cols);
       vterm_->resize_rows_cols(rows, cols);
+      grid_->Clear();
     }
 
     // pty to vterm
@@ -63,7 +64,7 @@ public:
           for (; i < VTERM_MAX_CHARS_PER_CELL && cell->chars[i]; ++i) {
           }
           std::span<uint32_t> span(cell->chars, i);
-          text_->SetCell(
+          grid_->SetCell(
               {
                   .row = (uint16_t)pos.row,
                   .col = (uint16_t)pos.col,
@@ -71,10 +72,10 @@ public:
               span);
         }
       }
-      text_->Commit();
+      grid_->Commit();
     }
 
-    text_->Render(width, height, duration);
+    grid_->Render(width, height, duration);
 
     if(auto cursor = vterm_->get_cursor())
     {
