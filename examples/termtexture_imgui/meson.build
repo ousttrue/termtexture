@@ -1,6 +1,6 @@
 imgui_dep = dependency('imgui', default_options: ['default_library=static'])
 
-executable('glfwterm', [
+executable('termtexture_imgui', [
     'main.cpp',
     'gui.cpp',
     'gui_widgets.cpp',

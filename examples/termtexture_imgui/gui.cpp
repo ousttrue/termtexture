@@ -29,8 +29,7 @@
 #pragma comment(lib, "legacy_stdio_definitions")
 #endif
 
-Gui::Gui(GLFWwindow *window, std::string_view glsl_version,
-         const std::string &fontfile) {
+Gui::Gui() {
   // Setup Dear ImGui context
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
@@ -39,10 +38,20 @@ Gui::Gui(GLFWwindow *window, std::string_view glsl_version,
   // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable
   // Keyboard Controls io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad; //
   // Enable Gamepad Controls
-
   // Setup Dear ImGui style
   ImGui::StyleColorsDark();
   // ImGui::StyleColorsClassic();
+}
+
+Gui::~Gui() {
+  // Cleanup
+  ImGui_ImplOpenGL3_Shutdown();
+  ImGui_ImplGlfw_Shutdown();
+  ImGui::DestroyContext();
+}
+
+bool Gui::Initialize(GLFWwindow *window, std::string_view glsl_version,
+                     const std::string &fontfile) {
 
   // Setup Platform/Renderer backends
   ImGui_ImplGlfw_InitForOpenGL(window, true);
@@ -103,7 +112,6 @@ Gui::Gui(GLFWwindow *window, std::string_view glsl_version,
     }
     auto fbo_render = [triangle](int width, int height,
                                  std::chrono::nanoseconds time) {
-
       auto ratio = (float)width / (float)height;
       auto ortho = glm::ortho(-ratio, ratio, -1.f, 1.f, 1.f, -1.f);
       triangle->Render(time, ortho);
@@ -126,7 +134,8 @@ Gui::Gui(GLFWwindow *window, std::string_view glsl_version,
     int cell_width = 15;
     int cell_height = 30;
     if (!term->LoadFont(fontfile, cell_width, cell_height)) {
-      throw std::runtime_error("TermTexture::LoadFont");
+      PLOG_ERROR << "fail tol load: " << fontfile;
+      return false;
     }
 
     auto cmd = "cmd.exe";
@@ -165,13 +174,8 @@ Gui::Gui(GLFWwindow *window, std::string_view glsl_version,
             },
     });
   }
-}
 
-Gui::~Gui() {
-  // Cleanup
-  ImGui_ImplOpenGL3_Shutdown();
-  ImGui_ImplGlfw_Shutdown();
-  ImGui::DestroyContext();
+  return true;
 }
 
 void Gui::UpdateRender(std::chrono::nanoseconds time) {

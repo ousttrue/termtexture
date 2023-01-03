@@ -31,11 +31,11 @@ class Gui {
 
 public:
   float clear_color[4] = {0.45f, 0.55f, 0.60f, 1.00f};
-
-  Gui(struct GLFWwindow *window, std::string_view glsl_version,
-      const std::string &fontfile);
+  Gui();
   ~Gui();
   Gui(const Gui &) = delete;
   Gui &operator=(const Gui &) = delete;
+  bool Initialize(struct GLFWwindow *window, std::string_view glsl_version,
+      const std::string &fontfile);
   void UpdateRender(std::chrono::nanoseconds time);
 };

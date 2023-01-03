@@ -8,8 +8,10 @@
             "name": "(Windows) Launch",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/prefix/bin/glfwterm.exe",
-            "args": [],
+            "program": "${workspaceFolder}/prefix/bin/termtexture_imgui.exe",
+            "args": [
+                "${env:USERPROFILE}/.fonts/HackGenNerdConsole-Regular.ttf",
+            ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
@@ -19,9 +21,9 @@
             "type": "lldb",
             "request": "launch",
             "name": "Debug",
-            "program": "${workspaceFolder}/prefix/bin/glfwterm.exe",
+            "program": "${workspaceFolder}/prefix/bin/termtexture_imgui.exe",
             "args": [
-                // "${env:USERPROFILE}/.fonts/HackGenNerdConsole-Regular.tff",
+                // "${env:USERPROFILE}/.fonts/HackGenNerdConsole-Regular.ttf",
             ],
             "cwd": "${workspaceFolder}"
         }

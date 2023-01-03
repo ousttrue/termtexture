@@ -57,7 +57,10 @@ int main(int argc, char **argv) {
   }
 
   glo::InitiazlieGlew();
-  Gui gui(window_handle, window.glsl_version(), fontfile);
+  Gui gui;
+  if (!gui.Initialize(window_handle, window.glsl_version(), fontfile)) {
+    return 2;
+  }
 
   while (auto time = window.BeginFrame(gui.clear_color)) {
     gui.UpdateRender(time.value());
