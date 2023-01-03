@@ -1,4 +1,4 @@
-#include "text.h"
+#include "cellgrid.h"
 #include "readallbytes.h"
 #include <chrono>
 #include <gl/glew.h>
@@ -18,12 +18,6 @@
 #define STB_TRUETYPE_IMPLEMENTATION
 #define STBTT_STATIC
 #include <stb_truetype.h>
-
-template <> struct std::hash<glo::Cell> {
-  std::size_t operator()(const glo::Cell &p) const noexcept {
-    return p.value();
-  }
-};
 
 auto vs_src = R"(#version 420
 in vec3 i_Pos;
@@ -130,8 +124,6 @@ void main() {
 }
 )";
 
-namespace glo {
-
 const auto GLYPH_COUNT = 95;
 
 struct FontAtlas {
@@ -153,8 +145,8 @@ struct FontAtlas {
   }
 
   // https://gist.github.com/vassvik/f442a4cc6127bc7967c583a12b148ac9
-  std::shared_ptr<Texture> LoadFont(std::string_view path, float font_size,
-                                    uint32_t atlas_size) {
+  std::shared_ptr<glo::Texture> LoadFont(std::string_view path, float font_size,
+                                         uint32_t atlas_size) {
     auto ttf_buffer = ReadAllBytes<unsigned char>(path);
     if (ttf_buffer.empty()) {
       return {};
@@ -226,7 +218,8 @@ struct FontAtlas {
     //   }
     // }
 
-    auto texture = Texture::Create(width, max_height, GL_RED, bitmap.data());
+    auto texture =
+        glo::Texture::Create(width, max_height, GL_RED, bitmap.data());
     auto label = "atlas";
     if ((__GLEW_EXT_debug_label)) {
       glLabelObjectEXT(GL_TEXTURE, texture->Handle(), 0, label);
@@ -278,49 +271,38 @@ struct Global {
 };
 
 template <typename T> struct TypedUBO {
-  std::shared_ptr<UBO> ubo;
+  std::shared_ptr<glo::UBO> ubo;
   T buffer;
 
-  void Initialize() { ubo = UBO::Create(); }
+  void Initialize() { ubo = glo::UBO::Create(); }
   void Upload() { ubo->Upload(buffer); }
   uint32_t Handle() { return ubo->Handle(); }
 };
 
-struct CellVertex {
-  float col;
-  float row;
-  float glyph_index;
-  float color[3];
-};
-
 class TextImpl {
-  std::shared_ptr<VAO> vao_;
+  std::shared_ptr<glo::VAO> vao_;
   TypedUBO<Global> ubo_global_;
   TypedUBO<Glyphs> ubo_glyphs_;
-  std::shared_ptr<ShaderProgram> shader_;
-  FontAtlas atlas_;
-  std::shared_ptr<Texture> font_;
-  int cell_width_ = 16;
-  int cell_height_ = 16;
-  std::vector<CellVertex> cells_;
-  std::unordered_map<Cell, size_t, std::hash<Cell>> cellMap_;
+  std::shared_ptr<glo::ShaderProgram> shader_;
+  std::shared_ptr<glo::Texture> font_;
 
 public:
+  FontAtlas atlas_;
   bool Load() {
     // shader
-    auto vs = ShaderCompile::VertexShader();
+    auto vs = glo::ShaderCompile::VertexShader();
     if (!vs->Compile(vs_src, false)) {
       return false;
     }
-    auto gs = ShaderCompile::GeometryShader();
+    auto gs = glo::ShaderCompile::GeometryShader();
     if (!gs->Compile(gs_src, false)) {
       return false;
     }
-    auto fs = ShaderCompile::FragmentShader();
+    auto fs = glo::ShaderCompile::FragmentShader();
     if (!fs->Compile(fs_src, false)) {
       return false;
     }
-    shader_ = ShaderProgram::Create();
+    shader_ = glo::ShaderProgram::Create();
     if (!shader_->Link(
             {.vs = vs->shader_, .fs = fs->shader_, .gs = gs->shader_})) {
       return false;
@@ -330,19 +312,17 @@ public:
     ubo_glyphs_.Initialize();
 
     // vertex buffer
-    auto vbo = VBO::Create();
-    VertexLayout layouts[] = {
+    auto vbo = glo::VBO::Create();
+    glo::VertexLayout layouts[] = {
         {{"i_Pos", 0}, 3, 24, 0},
         {{"i_Color", 1}, 3, 24, 12},
     };
-    vao_ = VAO::Create(vbo, layouts);
+    vao_ = glo::VAO::Create(vbo, layouts);
 
     return true;
   }
 
   void LoadFont(std::string_view path, float font_size, uint32_t atlas_size) {
-    cell_width_ = static_cast<int>(font_size / 2);
-    cell_height_ = static_cast<int>(font_size);
     font_ = atlas_.LoadFont(path, font_size, atlas_size);
     for (int i = 0; i < GLYPH_COUNT; ++i) {
       auto &g = atlas_.glyphs[i];
@@ -359,48 +339,24 @@ public:
     ubo_global_.buffer.descent = atlas_.descents[0];
   }
 
-  void Clear() {
-    cellMap_.clear();
-    cells_.clear();
+  void Commit(std::span<CellVertex> cells) {
+    vao_->GetVBO()->DataFromSpan(cells, true);
   }
 
-  void SetCell(Cell cell, std::span<uint32_t> codepoints) {
-    auto glyph_index = atlas_.GlyphIndexFromCodePoint(codepoints);
-    auto found = cellMap_.find(cell);
-    size_t index;
-    if (found != cellMap_.end()) {
-      index = found->second;
-    } else {
-      index = cells_.size();
-      cells_.push_back({
-          .col = (float)cell.col,
-          .row = (float)cell.row,
-      });
-      cellMap_.insert(std::make_pair(cell, index));
-    }
-
-    auto &v = cells_[index];
-    v.glyph_index = (float)glyph_index;
-    v.color[0] = 1;
-    v.color[1] = 1;
-    v.color[2] = 1;
-  }
-
-  void Commit() { vao_->GetVBO()->DataFromSpan(std::span{cells_}, true); }
-
-  void Render(int width, int height, std::chrono::nanoseconds duration) {
+  void Render(int width, int height, std::chrono::nanoseconds duration,
+              int cell_width, int cell_height, int draw_count) {
     if (!font_) {
       return;
     }
 
     {
       // ubo_global
-      ubo_global_.buffer.cellSize[0] = (float)cell_width_;
-      ubo_global_.buffer.cellSize[1] = (float)cell_height_;
+      ubo_global_.buffer.cellSize[0] = (float)cell_width;
+      ubo_global_.buffer.cellSize[1] = (float)cell_height;
       ubo_global_.buffer.screenSize[0] = (float)width;
       ubo_global_.buffer.screenSize[1] = (float)height;
-      ubo_global_.buffer.UpdateProjection(width, height, cell_width_,
-                                          cell_height_);
+      ubo_global_.buffer.UpdateProjection(width, height, cell_width,
+                                          cell_height);
       ubo_global_.Upload();
     }
 
@@ -412,7 +368,7 @@ public:
       {
         shader_->SetUBO(0, ubo_global_.Handle());
         shader_->SetUBO(1, ubo_glyphs_.Handle());
-        vao_->Draw(GL_POINTS, 0, cells_.size());
+        vao_->Draw(GL_POINTS, 0, draw_count);
       }
     }
   }
@@ -421,30 +377,56 @@ public:
 //
 // Text
 //
-Text::Text() : impl_(new TextImpl) {}
+CellGrid::CellGrid() : impl_(new TextImpl) {}
 
-Text::~Text() { delete (impl_); }
+CellGrid::~CellGrid() { delete (impl_); }
 
-std::shared_ptr<Text> Text::Create() { return std::shared_ptr<Text>(new Text); }
+std::shared_ptr<CellGrid> CellGrid::Create() {
+  return std::shared_ptr<CellGrid>(new CellGrid);
+}
 
-bool Text::Load(std::string_view path, int font_size, uint32_t atlas_size) {
+bool CellGrid::Load(std::string_view path, int font_size, uint32_t atlas_size) {
   if (!impl_->Load()) {
     return false;
   }
+
+  cell_width_ = static_cast<int>(font_size / 2);
+  cell_height_ = static_cast<int>(font_size);
   impl_->LoadFont(path, font_size, atlas_size);
   return true;
 }
 
-void Text::Clear() { impl_->Clear(); }
-
-void Text::SetCell(Cell cell, std::span<uint32_t> codepoints) {
-  impl_->SetCell(cell, codepoints);
+void CellGrid::Clear() {
+  cellMap_.clear();
+  cells_.clear();
 }
 
-void Text::Commit() { impl_->Commit(); }
+void CellGrid::SetCell(Cell cell, std::span<uint32_t> codepoints) {
+  auto glyph_index = impl_->atlas_.GlyphIndexFromCodePoint(codepoints);
+  auto found = cellMap_.find(cell);
+  size_t index;
+  if (found != cellMap_.end()) {
+    index = found->second;
+  } else {
+    index = cells_.size();
+    cells_.push_back({
+        .col = (float)cell.col,
+        .row = (float)cell.row,
+    });
+    cellMap_.insert(std::make_pair(cell, index));
+  }
 
-void Text::Render(int width, int height, std::chrono::nanoseconds duration) {
-  impl_->Render(width, height, duration);
+  auto &v = cells_[index];
+  v.glyph_index = (float)glyph_index;
+  v.color[0] = 1;
+  v.color[1] = 1;
+  v.color[2] = 1;
 }
 
-} // namespace glo
+void CellGrid::Commit() { impl_->Commit(cells_); }
+
+void CellGrid::Render(int width, int height,
+                      std::chrono::nanoseconds duration) {
+  impl_->Render(width, height, duration, cell_width_, cell_height_,
+                cells_.size());
+}

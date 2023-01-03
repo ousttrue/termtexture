@@ -99,13 +99,14 @@ VTermScreenCell *VTermObject::get_cell(VTermPos pos) const {
   return &cell_;
 }
 
-VTermScreenCell *VTermObject::get_cursor(VTermPos *pos) const {
-  *pos = cursor_pos_;
-  vterm_screen_get_cell(screen_, cursor_pos_, &cell_);
-  return &cell_;
+std::optional<VTermPos> VTermObject::get_cursor() const {
+  if (!cursor_visible_) {
+    return {};
+  }
+  return cursor_pos_;
 }
 
-void VTermObject::set_rows_cols(int rows, int cols) {
+void VTermObject::resize_rows_cols(int rows, int cols) {
   vterm_set_size(vterm_, rows, cols);
 }
 
@@ -139,7 +140,8 @@ int VTermObject::settermprop(VTermProp prop, VTermValue *val) {
   switch (prop) {
   case VTERM_PROP_CURSORVISIBLE:
     // bool
-    PLOG_DEBUG << "VTERM_PROP_CURSORVISIBLE: " << val->boolean;
+    // PLOG_DEBUG << "VTERM_PROP_CURSORVISIBLE: " << val->boolean;
+    cursor_visible_ = val->boolean;
     break;
   case VTERM_PROP_CURSORBLINK:
     // bool

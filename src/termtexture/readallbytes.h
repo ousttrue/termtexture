@@ -3,13 +3,10 @@
 #include <string_view>
 #include <vector>
 
-namespace glo {
-
 template <typename T>
 static std::vector<T> ReadAllBytes(std::string_view path) {
   auto str = std::string(path);
-  std::ifstream ifs(str.c_str(),
-                    std::ios::binary | std::ios::ate);
+  std::ifstream ifs(str.c_str(), std::ios::binary | std::ios::ate);
   if (!ifs) {
     return {};
   }
@@ -23,5 +20,3 @@ static std::vector<T> ReadAllBytes(std::string_view path) {
   ifs.read((char *)buffer.data(), pos);
   return buffer;
 }
-
-} // namespace glo

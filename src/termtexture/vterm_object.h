@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <unordered_set>
 #include <vterm.h>
+#include <optional>
 
 template <> struct ::std::hash<VTermPos> {
   std::size_t operator()(const VTermPos &p) const noexcept {
@@ -20,10 +21,11 @@ struct PosEqual {
 using PosSet = std::unordered_set<::VTermPos, std::hash<::VTermPos>, PosEqual>;
 
 class VTermObject {
-  VTerm *vterm_;
-  VTermScreen *screen_;
-  VTermPos cursor_pos_;
-  mutable VTermScreenCell cell_;
+  VTerm *vterm_ = nullptr;
+  VTermScreen *screen_ = nullptr;
+  VTermPos cursor_pos_ = {};
+  bool cursor_visible_ = true;
+  mutable VTermScreenCell cell_ = {};
   bool ringing_ = false;
 
   PosSet damaged_;
@@ -37,8 +39,8 @@ public:
   void keyboard_key(VTermKey key, VTermModifier mod);
   const PosSet &new_frame(bool *ringing, bool check_damaged = true);
   VTermScreenCell *get_cell(VTermPos pos) const;
-  VTermScreenCell *get_cursor(VTermPos *pos) const;
-  void set_rows_cols(int rows, int cols);
+  std::optional<VTermPos> get_cursor() const;
+  void resize_rows_cols(int rows, int cols);
 
 private:
   static int damage(VTermRect rect, void *user);

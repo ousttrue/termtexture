@@ -7,7 +7,7 @@ namespace glo {
 Texture::Texture(int width, int height, int pixel_type)
     : width_(width), height_(height), pixel_type_(pixel_type) {
   glGenTextures(1, &handle_);
-  PLOG_DEBUG << handle_;
+  // PLOG_DEBUG << handle_;
   Bind();
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -15,7 +15,7 @@ Texture::Texture(int width, int height, int pixel_type)
 }
 
 Texture::~Texture() {
-  PLOG_DEBUG << handle_;
+  // PLOG_DEBUG << handle_;
   glDeleteTextures(1, &handle_);
 }
 

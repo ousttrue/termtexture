@@ -1,13 +1,13 @@
 #include "termtexture.h"
 #include "common_pty.h"
-#include "text.h"
+#include "cellgrid.h"
 #include "vterm_object.h"
 #include <memory>
 
 namespace termtexture {
 
 class TermTextureImpl {
-  std::shared_ptr<glo::Text> text_;
+  std::shared_ptr<CellGrid> text_;
   int cell_width_;
   int cell_height_;
   int rows_ = 24;
@@ -18,7 +18,7 @@ class TermTextureImpl {
 public:
   std::shared_ptr<VTermObject> vterm_;
   TermTextureImpl() {
-    text_ = glo::Text::Create();
+    text_ = CellGrid::Create();
     vterm_ = std::shared_ptr<VTermObject>(new VTermObject(
         rows_, cols_,
         [](const char *s, size_t len, void *user) {
@@ -44,7 +44,7 @@ public:
       rows_ = rows;
       cols_ = cols;
       pty_.NotifyTermSize(rows, cols);
-      vterm_->set_rows_cols(rows, cols);
+      vterm_->resize_rows_cols(rows, cols);
     }
 
     // pty to vterm
@@ -75,6 +75,11 @@ public:
     }
 
     text_->Render(width, height, duration);
+
+    if(auto cursor = vterm_->get_cursor())
+    {
+      // cursor_->Render(cursor);
+    }
   }
 };
 
