@@ -138,18 +138,13 @@ struct Global {
   float ascent;
   float descent;
 
-  void UpdateProjection(int width, int height, int cell_width, int cell_height
-                        // CursorPosition scroll_top_left: ,
-                        // CursorPosition cursor_position: ,
-  ) {
-    auto cols = width / cell_width;
-    auto rows = height / cell_height;
-
+  void UpdateProjection(int width, int height, int cell_width,
+                        int cell_height) {
     auto m = projection;
     m[0] = 2.0 / width;
     m[5] = -(2.0 / height);
-    m[12] = -1 - cell_width / width * 2;
-    m[13] = 1 + cell_height / height * 2;
+    m[12] = -1 - (float)cell_width / width * 2;
+    m[13] = 1 + (float)cell_height / height * 2;
   }
 };
 
@@ -172,22 +167,8 @@ class TextImpl {
 public:
   FontAtlas atlas_;
   bool Initialize() {
-    // shader
-    auto vs = glo::ShaderCompile::VertexShader();
-    if (!vs->Compile(vs_src, false)) {
-      return false;
-    }
-    auto gs = glo::ShaderCompile::GeometryShader();
-    if (!gs->Compile(gs_src, false)) {
-      return false;
-    }
-    auto fs = glo::ShaderCompile::FragmentShader();
-    if (!fs->Compile(fs_src, false)) {
-      return false;
-    }
-    shader_ = glo::ShaderProgram::Create();
-    if (!shader_->Link(
-            {.vs = vs->shader_, .fs = fs->shader_, .gs = gs->shader_})) {
+    shader_ = glo::ShaderProgram::Create({vs_src, fs_src, gs_src, false});
+    if (!shader_) {
       return false;
     }
 
@@ -205,14 +186,14 @@ public:
     return true;
   }
 
-  bool LoadFont(std::string_view path, float font_size, uint32_t atlas_size) {
-    auto &bitmap = atlas_.LoadFont(path, font_size, atlas_size);
+  bool LoadFont(std::string_view path, int font_size, uint32_t atlas_size) {
+    auto &bitmap =
+        atlas_.LoadFont(path, static_cast<float>(font_size), atlas_size);
     if (bitmap.empty()) {
       return false;
     }
 
-    font_ =
-        glo::Texture::Create(atlas_size, atlas_size, GL_RED, bitmap.data());
+    font_ = glo::Texture::Create(atlas_size, atlas_size, GL_RED, bitmap.data());
     auto label = "atlas";
     if ((__GLEW_EXT_debug_label)) {
       glLabelObjectEXT(GL_TEXTURE, font_->Handle(), 0, label);

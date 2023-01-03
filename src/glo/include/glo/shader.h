@@ -22,6 +22,13 @@ public:
   bool Compile(const char *src, bool use_spirv);
 };
 
+struct ShaderSources {
+  const char *vs = nullptr;
+  const char *fs = nullptr;
+  const char *gs = nullptr;
+  bool use_spirv = true;
+};
+
 struct Shaders {
   uint32_t vs = 0;
   uint32_t fs = 0;
@@ -37,7 +44,7 @@ public:
   ~ShaderProgram();
   ShaderProgram(const ShaderProgram &) = delete;
   ShaderProgram &operator=(const ShaderProgram &) = delete;
-  static std::shared_ptr<ShaderProgram> Create();
+  static std::shared_ptr<ShaderProgram> Create(const ShaderSources &src);
   bool Link(Shaders shaders);
   void Bind();
   void Unbind();

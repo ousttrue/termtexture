@@ -4,8 +4,8 @@
 #include "glfw_window.h"
 #include "gui_widgets.h"
 #include "plog/Log.h"
-#include <__msvc_chrono.hpp>
 #include <chrono>
+#include <glm/gtx/transform.hpp>
 #include <glo/scene/triangle.h>
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
@@ -97,13 +97,16 @@ Gui::Gui(GLFWwindow *window, std::string_view glsl_version,
   });
 
   {
-    auto triangle = glo::Triangle::Create();
-    if (!triangle->Load()) {
+    auto triangle = glo::CreateTriangle();
+    if (!triangle) {
       throw std::runtime_error("Triangle::Load");
     }
     auto fbo_render = [triangle](int width, int height,
                                  std::chrono::nanoseconds time) {
-      triangle->Render(width, height, time);
+
+      auto ratio = (float)width / (float)height;
+      auto ortho = glm::ortho(-ratio, ratio, -1.f, 1.f, 1.f, -1.f);
+      triangle->Render(time, ortho);
     };
 
     auto fbo_window = FboWindow::Create("triangle", fbo_render);

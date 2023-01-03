@@ -87,8 +87,42 @@ ShaderProgram::~ShaderProgram() {
   glDeleteProgram(program_);
 }
 
-std::shared_ptr<ShaderProgram> ShaderProgram::Create() {
-  return std::shared_ptr<ShaderProgram>(new ShaderProgram);
+std::shared_ptr<ShaderProgram> ShaderProgram::Create(const ShaderSources &src) {
+
+  // compile
+  Shaders shaders{};
+  auto vs = ShaderCompile::VertexShader();
+  if (src.vs) {
+    if (vs->Compile(src.vs, src.use_spirv)) {
+      shaders.vs = vs->shader_;
+    } else {
+      return nullptr;
+    }
+  }
+  auto fs = ShaderCompile::FragmentShader();
+  if (src.fs) {
+    if (fs->Compile(src.fs, src.use_spirv)) {
+      shaders.fs = fs->shader_;
+    } else {
+      return nullptr;
+    }
+  }
+  auto gs = glo::ShaderCompile::GeometryShader();
+  if (src.gs) {
+    if (gs->Compile(src.gs, src.use_spirv)) {
+      shaders.gs = gs->shader_;
+    } else {
+      return nullptr;
+    }
+  }
+
+  // link
+  auto ptr = std::shared_ptr<ShaderProgram>(new ShaderProgram);
+  if (!ptr->Link(shaders)) {
+    return nullptr;
+  }
+
+  return ptr;
 }
 bool ShaderProgram::Link(Shaders shaders) {
   if (shaders.vs)

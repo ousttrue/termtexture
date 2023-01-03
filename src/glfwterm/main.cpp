@@ -1,5 +1,6 @@
 #include "glfw_window.h"
 #include "gui.h"
+#include <glo.h>
 #include <plog/Appenders/ColorConsoleAppender.h>
 #include <plog/Formatters/TxtFormatter.h>
 #include <plog/Init.h>
@@ -55,6 +56,7 @@ int main(int argc, char **argv) {
     return 1;
   }
 
+  glo::InitiazlieGlew();
   Gui gui(window_handle, window.glsl_version(), fontfile);
 
   while (auto time = window.BeginFrame(gui.clear_color)) {
