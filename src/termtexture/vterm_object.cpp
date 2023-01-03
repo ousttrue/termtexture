@@ -1,8 +1,8 @@
 #include "vterm_object.h"
 #include "vterm.h"
 #include <iostream>
-#include <string.h>
 #include <plog/Log.h>
+#include <string.h>
 
 int VTermObject::damage(VTermRect rect, void *user) {
   return ((VTermObject *)user)
@@ -25,7 +25,6 @@ int VTermObject::settermprop(VTermProp prop, VTermValue *val, void *user) {
 int VTermObject::bell(void *user) { return ((VTermObject *)user)->bell(); }
 
 int VTermObject::resize(int rows, int cols, void *user) {
-  std::cout << "resize: " << rows << ", " << cols << std::endl;
   return ((VTermObject *)user)->resize(rows, cols);
 }
 
@@ -38,8 +37,8 @@ int VTermObject::sb_popline(int cols, VTermScreenCell *cells, void *user) {
   return ((VTermObject *)user)->sb_popline(cols, cells);
 }
 
-VTermObject::VTermObject(int _rows, int _cols, int font_width, int font_height,
-                         VTermOutputCallback out, void *user) {
+VTermObject::VTermObject(int _rows, int _cols, VTermOutputCallback out,
+                         void *user) {
   vterm_ = vterm_new(_rows, _cols);
   vterm_set_utf8(vterm_, 1);
   vterm_output_set_callback(vterm_, out, user);
@@ -112,9 +111,9 @@ void VTermObject::set_rows_cols(int rows, int cols) {
 
 int VTermObject::damage(int start_row, int start_col, int end_row,
                         int end_col) {
-  // std::cout << "damage: (" << start_row << ", " << start_col << ")-(" <<
+  // PLOG_DEBUG << "damage: (" << start_row << ", " << start_col << ")-(" <<
   // end_row
-  //           << "," << end_col << ")" << std::endl;
+  //           << "," << end_col << ")";
   for (int row = start_row; row < end_row; row++) {
     for (int col = start_col; col < end_col; col++) {
       damaged_.insert(VTermPos{
@@ -127,7 +126,7 @@ int VTermObject::damage(int start_row, int start_col, int end_row,
 }
 
 int VTermObject::moverect(VTermRect dest, VTermRect src) {
-  std::cout << "moverect" << std::endl;
+  PLOG_DEBUG << "moverect";
   return 0;
 }
 
@@ -140,63 +139,61 @@ int VTermObject::settermprop(VTermProp prop, VTermValue *val) {
   switch (prop) {
   case VTERM_PROP_CURSORVISIBLE:
     // bool
-    std::cout << "VTERM_PROP_CURSORVISIBLE: " << val->boolean << std::endl;
+    PLOG_DEBUG << "VTERM_PROP_CURSORVISIBLE: " << val->boolean;
     break;
   case VTERM_PROP_CURSORBLINK:
     // bool
-    std::cout << "VTERM_PROP_CURSORBLINK: " << val->boolean << std::endl;
+    PLOG_DEBUG << "VTERM_PROP_CURSORBLINK: " << val->boolean;
     break;
   case VTERM_PROP_ALTSCREEN:
     // bool
-    std::cout << "VTERM_PROP_ALTSCREEN: " << val->boolean << std::endl;
+    PLOG_DEBUG << "VTERM_PROP_ALTSCREEN: " << val->boolean;
     break;
   case VTERM_PROP_TITLE:
     // string
-    std::cout << "VTERM_PROP_TITLE: "
-              << std::string_view(val->string.str, val->string.len)
-              << std::endl;
+    PLOG_DEBUG << "VTERM_PROP_TITLE: "
+               << std::string_view(val->string.str, val->string.len);
     break;
   case VTERM_PROP_ICONNAME:
     // string
-    std::cout << "VTERM_PROP_ICONNAME: "
-              << std::string_view(val->string.str, val->string.len)
-              << std::endl;
+    PLOG_DEBUG << "VTERM_PROP_ICONNAME: "
+               << std::string_view(val->string.str, val->string.len);
     break;
   case VTERM_PROP_REVERSE:
     // bool
-    std::cout << "VTERM_PROP_REVERSE: " << val->boolean << std::endl;
+    PLOG_DEBUG << "VTERM_PROP_REVERSE: " << val->boolean;
     break;
   case VTERM_PROP_CURSORSHAPE:
     // number
-    std::cout << "VTERM_PROP_CURSORSHAPE: " << val->number << std::endl;
+    PLOG_DEBUG << "VTERM_PROP_CURSORSHAPE: " << val->number;
     break;
   case VTERM_PROP_MOUSE:
     // number
-    std::cout << "VTERM_PROP_MOUSE: " << val->number << std::endl;
+    PLOG_DEBUG << "VTERM_PROP_MOUSE: " << val->number;
     break;
   default:
-    std::cout << "unknown prop: " << prop << std::endl;
+    PLOG_DEBUG << "unknown prop: " << prop;
   }
   return 0;
 }
 
 int VTermObject::bell() {
-  std::cout << "bell" << std::endl;
+  PLOG_DEBUG << "bell";
   ringing_ = true;
   return 0;
 }
 
 int VTermObject::resize(int rows, int cols) {
-  std::cout << "resize" << std::endl;
+  PLOG_DEBUG << "rows x cols: " << rows << " x " << cols;
   return 0;
 }
 
 int VTermObject::sb_pushline(int cols, const VTermScreenCell *cells) {
-  std::cout << "sb_pushline" << std::endl;
+  PLOG_DEBUG << "sb_pushline";
   return 0;
 }
 
 int VTermObject::sb_popline(int cols, VTermScreenCell *cells) {
-  std::cout << "sb_popline" << std::endl;
+  PLOG_DEBUG << "sb_popline";
   return 0;
 }

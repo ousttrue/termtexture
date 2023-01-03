@@ -30,8 +30,7 @@ class VTermObject {
   PosSet tmp_;
 
 public:
-  VTermObject(int _rows, int _cols, int font_width, int font_height,
-              VTermOutputCallback out, void *user);
+  VTermObject(int _rows, int _cols, VTermOutputCallback out, void *user);
   ~VTermObject();
   void input_write(const char *bytes, size_t len);
   void keyboard_unichar(char c, VTermModifier mod);

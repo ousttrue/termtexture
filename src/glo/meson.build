@@ -1,7 +1,6 @@
 glew_dep = dependency('glew')
 glm_dep = dependency('glm')
 plog_dep = dependency('plog')
-stb_dep = dependency('stb')
 
 glo_inc = include_directories('include')
 glo_lib = static_library('glo', [
@@ -13,12 +12,12 @@ glo_lib = static_library('glo', [
     'vao.cpp',
     #
     'scene/triangle.cpp',
-    'scene/text.cpp',
 ],
 include_directories: glo_inc,
-dependencies: [glew_dep, plog_dep, spirv_util_dep, glm_dep, plog_dep, stb_dep],
+dependencies: [glew_dep, plog_dep, spirv_util_dep, glm_dep],
 )
 glo_dep = declare_dependency(
     link_with: glo_lib,
     include_directories: glo_inc,
+    dependencies: [glew_dep, plog_dep]
 )

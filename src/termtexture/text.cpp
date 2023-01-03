@@ -1,12 +1,12 @@
-#include "glo/scene/text.h"
-#include "glo/readallbytes.h"
-#include "glo/scoped_binder.h"
-#include "glo/shader.h"
-#include "glo/texture.h"
-#include "glo/ubo.h"
-#include "glo/vao.h"
+#include "text.h"
+#include "readallbytes.h"
 #include <chrono>
 #include <gl/glew.h>
+#include <glo/scoped_binder.h>
+#include <glo/shader.h>
+#include <glo/texture.h>
+#include <glo/ubo.h>
+#include <glo/vao.h>
 #include <ios>
 #include <memory>
 #include <plog/Log.h>
@@ -427,7 +427,7 @@ Text::~Text() { delete (impl_); }
 
 std::shared_ptr<Text> Text::Create() { return std::shared_ptr<Text>(new Text); }
 
-bool Text::Load(const std::string &path, float font_size, uint32_t atlas_size) {
+bool Text::Load(std::string_view path, int font_size, uint32_t atlas_size) {
   if (!impl_->Load()) {
     return false;
   }

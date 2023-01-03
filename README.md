@@ -1,19 +1,13 @@
 # termtexture
 pty rendered to texture
 
-```
-GLFW
-  |window resize
-  |keyboard input
-  |mouse input
-  V
-+---+         +-----+        +---+
-|fbo|<-render-|vterm|<=bind=>|pty|/bin/bash
-+---+--input->+-----+        +---+
-                 A
-                bind
-                 V
-              +--------------+
-              |Windows conpty|cmd.exe
-              +--------------+pwsh.exe
-```
+## TODO
+
+- [ ] Cursor
+- [ ] Add glyphs dynamically
+- [x] Reflect resize of texture to rows and cols of terminal
+- [ ] FG color
+- [ ] BG color
+- [ ] Key board input modifier
+- [ ] Multiple pty. Close when Exit.
+- [ ] Docking

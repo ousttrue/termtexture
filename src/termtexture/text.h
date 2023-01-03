@@ -25,7 +25,7 @@ public:
   static std::shared_ptr<Text> Create();
   Text(const Text &) = delete;
   Text &operator=(const Text &) = delete;
-  bool Load(const std::string &path, float font_size, uint32_t atlas_size);
+  bool Load(std::string_view path, int font_size, uint32_t atlas_size);
   void Clear();
   void SetCell(Cell cell, std::span<uint32_t> codepoints);
   void PushText(const std::u32string &unicodes);

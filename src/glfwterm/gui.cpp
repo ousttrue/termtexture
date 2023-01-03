@@ -2,12 +2,9 @@
 #include "GLFW/glfw3.h"
 #include "common_pty.h"
 #include "gui_widgets.h"
-#include "vterm.h"
-#include "vterm_keycodes.h"
-#include "vterm_object.h"
+#include "plog/Log.h"
 #include <__msvc_chrono.hpp>
 #include <chrono>
-#include <glo/scene/text.h>
 #include <glo/scene/triangle.h>
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
@@ -15,6 +12,7 @@
 #include <stdexcept>
 #include <stdint.h>
 #include <stdio.h>
+#include <termtexture.h>
 #if defined(IMGUI_IMPL_OPENGL_ES2)
 #include <GLES2/gl2.h>
 #endif
@@ -112,75 +110,40 @@ Gui::Gui(GLFWwindow *window, std::string_view glsl_version,
   }
 
   {
-    int font_width = 15;
-    int font_height = 30;
-    auto text = glo::Text::Create();
-    if (!text->Load(fontfile, font_height, 1024)) {
-      throw std::runtime_error("Text::Load");
+    auto term = termtexture::TermTexture::Create();
+    int cell_width = 15;
+    int cell_height = 30;
+    if (!term->LoadFont(fontfile, cell_width, cell_height)) {
+      throw std::runtime_error("TermTexture::LoadFont");
     }
 
-    int cols = 80;
-    int rows = 24;
     auto cmd = "cmd.exe";
+    if (!term->Launch(cmd)) {
+      PLOG_ERROR << "fail: " << cmd;
+    }
 
-    auto pty = std::make_shared<common_pty::Pty>();
-    pty->Launch(rows, cols, cmd);
-
-    auto vterm = std::make_shared<VTermObject>(
-        rows, cols, font_width, font_height,
-        [](const char *s, size_t len, void *user) {
-          ((common_pty::Pty *)user)->Write(s, len);
-        },
-        pty.get());
-
-    auto fbo_render = [text, pty, vterm](int width, int height) {
+    auto fbo_render = [term](int width, int height) {
       // keyboard input to vterm
       {
         auto &io = ImGui::GetIO();
         for (auto it = io.InputQueueCharacters.begin();
              it != io.InputQueueCharacters.end(); ++it) {
-          vterm->keyboard_unichar(*it, VTermModifier::VTERM_MOD_NONE);
+          term->KeyboardUnichar(*it, VTermModifier::VTERM_MOD_NONE);
         }
         if (ImGui::IsKeyPressed(ImGuiKey_Enter)) {
-          vterm->keyboard_key(VTERM_KEY_ENTER, VTermModifier::VTERM_MOD_NONE);
+          term->KeyboardKey(VTERM_KEY_ENTER, VTermModifier::VTERM_MOD_NONE);
         } else if (ImGui::IsKeyPressed(ImGuiKey_Backspace)) {
-          vterm->keyboard_key(VTERM_KEY_BACKSPACE, VTermModifier::VTERM_MOD_NONE);
+          term->KeyboardKey(VTERM_KEY_BACKSPACE,
+                              VTermModifier::VTERM_MOD_NONE);
         } else if (ImGui::IsKeyPressed(ImGuiKey_Tab)) {
-          vterm->keyboard_key(VTERM_KEY_TAB, VTermModifier::VTERM_MOD_NONE);
+          term->KeyboardKey(VTERM_KEY_TAB, VTermModifier::VTERM_MOD_NONE);
         }
-      }
-
-      // pty to vterm
-      auto input = pty->Read();
-      if (!input.empty()) {
-        vterm->input_write(input.data(), input.size());
-      }
-
-      // vterm to screen
-      bool ringing;
-      auto &damaged = vterm->new_frame(&ringing, true);
-      if (!damaged.empty()) {
-        for (auto &pos : damaged) {
-          if (auto cell = vterm->get_cell(pos)) {
-            int i = 0;
-            for (; i < VTERM_MAX_CHARS_PER_CELL && cell->chars[i]; ++i) {
-            }
-            std::span<uint32_t> span(cell->chars, i);
-            text->SetCell(
-                {
-                    .row = (uint16_t)pos.row,
-                    .col = (uint16_t)pos.col,
-                },
-                span);
-          }
-        }
-        text->Commit();
       }
 
       auto seconds =
           std::chrono::duration<double, std::ratio<1, 1>>(glfwGetTime());
 
-      text->Render(
+      term->Render(
           width, height,
           std::chrono::duration_cast<std::chrono::nanoseconds>(seconds));
     };
