@@ -65,6 +65,12 @@ GLFWwindow *Window::CreaeWindow(int width, int height, const char *title) {
   return window_;
 }
 
+std::tuple<int, int> Window::FrameBufferSize() const {
+  int w, h;
+  glfwGetFramebufferSize(window_, &w, &h);
+  return {w, h};
+}
+
 std::optional<std::chrono::nanoseconds>
 Window::BeginFrame(const float clear_color[4]) {
   if (glfwWindowShouldClose(window_)) {
@@ -81,9 +87,7 @@ Window::BeginFrame(const float clear_color[4]) {
   // and hide them from your application based on those two flags.
   glfwPollEvents();
 
-  int display_w;
-  int display_h;
-  glfwGetFramebufferSize(window_, &display_w, &display_h);
+  auto [display_w, display_h] = FrameBufferSize();
 
   // render
   glViewport(0, 0, display_w, display_h);

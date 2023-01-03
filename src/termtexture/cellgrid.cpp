@@ -143,8 +143,8 @@ struct Global {
     auto m = projection;
     m[0] = 2.0 / width;
     m[5] = -(2.0 / height);
-    m[12] = -1 - (float)cell_width / width * 2;
-    m[13] = 1 + (float)cell_height / height * 2;
+    m[12] = -1 - cell_width / width * 2;
+    m[13] = 1 + cell_height / height * 2;
   }
 };
 

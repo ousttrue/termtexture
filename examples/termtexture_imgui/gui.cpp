@@ -134,13 +134,14 @@ bool Gui::Initialize(GLFWwindow *window, std::string_view glsl_version,
     int cell_width = 15;
     int cell_height = 30;
     if (!term->LoadFont(fontfile, cell_width, cell_height)) {
-      PLOG_ERROR << "fail tol load: " << fontfile;
+      PLOG_ERROR << "LoadFont: " << fontfile;
       return false;
     }
 
     auto cmd = "cmd.exe";
     if (!term->Launch(cmd)) {
-      PLOG_ERROR << "fail: " << cmd;
+      PLOG_ERROR << "Launch: " << cmd;
+      return false;
     }
 
     auto fbo_render = [term](int width, int height,
