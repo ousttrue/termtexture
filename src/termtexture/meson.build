@@ -3,7 +3,7 @@ vterm_dep = dependency('vterm')
 stb_dep = dependency('stb')
 plog_dep = dependency('plog')
 
-src = files('text.cpp', 'vterm_object.cpp', 'termtexture.cpp')
+src = files('cellgrid.cpp', 'vterm_object.cpp', 'termtexture.cpp', 'fontatlas.cpp')
 if host_machine.system() == 'windows'
     src += files('common_pty_windows.cpp')
 else

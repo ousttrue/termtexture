@@ -1,5 +1,5 @@
 #include "cellgrid.h"
-#include "readallbytes.h"
+#include "fontatlas.h"
 #include <chrono>
 #include <gl/glew.h>
 #include <glo/scoped_binder.h>
@@ -14,10 +14,6 @@
 #include <string>
 #include <type_traits>
 #include <unordered_map>
-
-#define STB_TRUETYPE_IMPLEMENTATION
-#define STBTT_STATIC
-#include <stb_truetype.h>
 
 auto vs_src = R"(#version 420
 in vec3 i_Pos;
@@ -124,119 +120,6 @@ void main() {
 }
 )";
 
-const auto GLYPH_COUNT = 95;
-
-struct FontAtlas {
-
-  float ascents[GLYPH_COUNT];
-  float descents[GLYPH_COUNT];
-  float linegaps[GLYPH_COUNT];
-  stbtt_packedchar glyphs[GLYPH_COUNT];
-
-  size_t GlyphIndexFromCodePoint(std::span<uint32_t> codepoints) {
-    if (codepoints.empty()) {
-      return 0;
-    }
-    auto codepoint = codepoints[0];
-    if (codepoint < 32) {
-      return 0;
-    }
-    return codepoint - 32;
-  }
-
-  // https://gist.github.com/vassvik/f442a4cc6127bc7967c583a12b148ac9
-  std::shared_ptr<glo::Texture> LoadFont(std::string_view path, float font_size,
-                                         uint32_t atlas_size) {
-    auto ttf_buffer = ReadAllBytes<unsigned char>(path);
-    if (ttf_buffer.empty()) {
-      return {};
-    }
-    PLOG_INFO << path << std::endl;
-
-    stbtt_pack_range range{
-        .font_size = font_size,
-        .first_unicode_codepoint_in_range = 32,
-        .num_chars = GLYPH_COUNT,
-        .chardata_for_range = glyphs,
-    };
-
-    // make a most likely large enough bitmap, adjust to font type, number of
-    // sizes and glyphs and oversampling
-    auto width = atlas_size;
-    auto max_height = atlas_size;
-    std::vector<uint8_t> bitmap(width * max_height);
-    assert(bitmap.size());
-    // do the packing, based on the ranges specified
-    stbtt_pack_context pc;
-    stbtt_PackBegin(&pc, bitmap.data(), width, max_height, 0, 1, nullptr);
-    // say, choose 3x1 oversampling for subpixel positioning
-    stbtt_PackSetOversampling(&pc, 1, 1);
-    stbtt_PackFontRanges(&pc, ttf_buffer.data(), 0, &range, 1);
-    stbtt_PackEnd(&pc);
-
-    // get the global metrics for each size/range
-    stbtt_fontinfo info;
-    stbtt_InitFont(&info, ttf_buffer.data(),
-                   stbtt_GetFontOffsetForIndex(ttf_buffer.data(), 0));
-
-    {
-      auto scale = stbtt_ScaleForPixelHeight(&info, range.font_size);
-      int a;
-      int d;
-      int l;
-      stbtt_GetFontVMetrics(&info, &a, &d, &l);
-      int i = 0;
-      ascents[i] = a * scale;
-      descents[i] = d * scale;
-      linegaps[i] = l * scale;
-    }
-
-    // {
-    //   int j = 0;
-    //   PLOG_DEBUG << "size   : " << range.font_size;
-    //   PLOG_DEBUG << "ascent : " << ascents[j];
-    //   PLOG_DEBUG << "descent: " << descents[j];
-    //   PLOG_DEBUG << "linegap: " << linegaps[j];
-    //   for (int i = 0; i < GLYPH_COUNT; ++i) {
-    //                 PLOG_DEBUG << "    '{}':  (x0,y0) = ({},{}),  (x1,y1)
-    //     //     =
-    //     //     ({},{}),  (xoff,yoff) = ({},{}),  (xoff2,yoff2) = ({},{}),
-    //     //     xadvance
-    //     //     =
-    //     //     {}", .{
-    //     //     //             32 + i,
-    //     //     //             g.x0,
-    //     //     //             g.y0,
-    //     //     //             g.x1,
-    //     //     //             g.y1,
-    //     //     //             g.xoff,
-    //     //     //             g.yoff,
-    //     //     //             g.xoff2,
-    //     //     //             g.yoff2,
-    //     //     //             g.xadvance,
-    //     //     //         });
-    //   }
-    // }
-
-    auto texture =
-        glo::Texture::Create(width, max_height, GL_RED, bitmap.data());
-    auto label = "atlas";
-    if ((__GLEW_EXT_debug_label)) {
-      glLabelObjectEXT(GL_TEXTURE, texture->Handle(), 0, label);
-    }
-    if ((__GLEW_KHR_debug)) {
-      glObjectLabel(GL_TEXTURE, texture->Handle(), -1, label);
-    }
-
-    return texture;
-  }
-};
-
-struct Glyph {
-  float xywh[4];
-  float offset[4];
-};
-
 struct Glyphs {
   Glyph glyphs[128];
 };
@@ -288,7 +171,7 @@ class TextImpl {
 
 public:
   FontAtlas atlas_;
-  bool Load() {
+  bool Initialize() {
     // shader
     auto vs = glo::ShaderCompile::VertexShader();
     if (!vs->Compile(vs_src, false)) {
@@ -322,21 +205,36 @@ public:
     return true;
   }
 
-  void LoadFont(std::string_view path, float font_size, uint32_t atlas_size) {
-    font_ = atlas_.LoadFont(path, font_size, atlas_size);
+  bool LoadFont(std::string_view path, float font_size, uint32_t atlas_size) {
+    auto &bitmap = atlas_.LoadFont(path, font_size, atlas_size);
+    if (bitmap.empty()) {
+      return false;
+    }
+
+    font_ =
+        glo::Texture::Create(atlas_size, atlas_size, GL_RED, bitmap.data());
+    auto label = "atlas";
+    if ((__GLEW_EXT_debug_label)) {
+      glLabelObjectEXT(GL_TEXTURE, font_->Handle(), 0, label);
+    }
+    if ((__GLEW_KHR_debug)) {
+      glObjectLabel(GL_TEXTURE, font_->Handle(), -1, label);
+    }
+
+    // ubo_glyph
     for (int i = 0; i < GLYPH_COUNT; ++i) {
       auto &g = atlas_.glyphs[i];
-      ubo_glyphs_.buffer.glyphs[i] = {
-          .xywh = {(float)g.x0, (float)g.y0, (float)g.x1, (float)g.y1},
-          .offset = {(float)g.xoff, (float)g.yoff, (float)g.xoff2,
-                     (float)g.yoff2},
-      };
+      ubo_glyphs_.buffer.glyphs[i] = g;
     }
     ubo_glyphs_.Upload();
+
+    // ubo_global
     ubo_global_.buffer.atlasSize[0] = (float)atlas_size;
     ubo_global_.buffer.atlasSize[1] = (float)atlas_size;
-    ubo_global_.buffer.ascent = atlas_.ascents[0];
-    ubo_global_.buffer.descent = atlas_.descents[0];
+    ubo_global_.buffer.ascent = atlas_.ascents;
+    ubo_global_.buffer.descent = atlas_.descents;
+
+    return true;
   }
 
   void Commit(std::span<CellVertex> cells) {
@@ -386,14 +284,13 @@ std::shared_ptr<CellGrid> CellGrid::Create() {
 }
 
 bool CellGrid::Load(std::string_view path, int font_size, uint32_t atlas_size) {
-  if (!impl_->Load()) {
+  if (!impl_->Initialize()) {
     return false;
   }
 
   cell_width_ = static_cast<int>(font_size / 2);
   cell_height_ = static_cast<int>(font_size);
-  impl_->LoadFont(path, font_size, atlas_size);
-  return true;
+  return impl_->LoadFont(path, font_size, atlas_size);
 }
 
 void CellGrid::Clear() {
