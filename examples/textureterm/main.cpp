@@ -254,6 +254,10 @@ int main(int argc, char **argv) {
 
   float clear_color[] = {0, 0, 0, 0};
   while (auto time = window.BeginFrame(clear_color)) {
+    if(term->IsClosed())
+    {
+      break;
+    }
     auto [width, height] = window.FrameBufferSize();
     term->Render(width, height, time.value());
     window.EndFrame();

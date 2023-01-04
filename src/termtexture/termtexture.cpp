@@ -1,6 +1,6 @@
 #include "termtexture.h"
-#include "common_pty.h"
 #include "cellgrid.h"
+#include "common_pty.h"
 #include "vterm_object.h"
 #include <memory>
 
@@ -13,9 +13,8 @@ class TermTextureImpl {
   int rows_ = 24;
   int cols_ = 80;
 
-  common_pty::Pty pty_;
-
 public:
+  common_pty::Pty pty_;
   std::shared_ptr<VTermObject> vterm_;
   TermTextureImpl() {
     grid_ = CellGrid::Create();
@@ -77,8 +76,7 @@ public:
 
     grid_->Render(width, height, duration);
 
-    if(auto cursor = vterm_->get_cursor())
-    {
+    if (auto cursor = vterm_->get_cursor()) {
       // cursor_->Render(cursor);
     }
   }
@@ -114,5 +112,7 @@ void TermTexture::KeyboardUnichar(char c, VTermModifier mod) {
 void TermTexture::KeyboardKey(VTermKey key, VTermModifier mod) {
   impl_->vterm_->keyboard_key(key, mod);
 }
+
+bool TermTexture::IsClosed() const { return impl_->pty_.IsClosed(); }
 
 } // namespace termtexture

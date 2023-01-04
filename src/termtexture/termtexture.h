@@ -21,6 +21,7 @@ public:
   void Render(int width, int height, std::chrono::nanoseconds duration);
   void KeyboardUnichar(char c, VTermModifier mod);
   void KeyboardKey(VTermKey key, VTermModifier mod);
+  bool IsClosed() const;
 };
 
 } // namespace termtexture
