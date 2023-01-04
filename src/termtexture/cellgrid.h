@@ -22,7 +22,7 @@ struct CellVertex {
   float col;
   float row;
   float glyph_index;
-  float color[3];
+  uint8_t color[4];
 };
 
 class CellGrid {

@@ -17,9 +17,8 @@
 
 auto vs_src = R"(#version 420
 in vec3 i_Pos;
-in vec3 i_Color;
-// out vec3 v_Color;
-out vData { vec3 color; }
+in vec4 i_Color;
+out vData { vec4 color; }
 vertex;
 void main() {
   gl_Position = vec4(i_Pos, 1);
@@ -48,10 +47,10 @@ struct Glyph {
 
 layout(std140, binding = 1) uniform Glyphs { Glyph glyphs[128]; };
 
-in vData { vec3 color; }
+in vData { vec4 color; }
 vertices[];
 out vec2 g_TexCoords;
-out vec3 g_Color;
+out vec4 g_Color;
 
 vec2 pixelToUv(float x, float y) {
   return vec2((x + 0.5) / global.atlasSize.x, (y + 0.5) / global.atlasSize.y);
@@ -109,13 +108,13 @@ void main() {
 auto fs_src = R"(#version 460 core
 
 in vec2 g_TexCoords;
-in vec3 g_Color;
+in vec4 g_Color;
 layout(location = 0) out vec4 FragColor;
 uniform sampler2D uTex;
 
 void main() {
   vec4 texcel = texture(uTex, g_TexCoords);
-  FragColor = vec4(g_Color, texcel.x);
+  FragColor = vec4(g_Color.rgb, texcel.x);
   // FragColor = vec4(TexCoords, 0, 1);
 }
 )";
@@ -178,8 +177,8 @@ public:
     // vertex buffer
     auto vbo = glo::VBO::Create();
     glo::VertexLayout layouts[] = {
-        {{"i_Pos", 0}, 3, 24, 0},
-        {{"i_Color", 1}, 3, 24, 12},
+        {{"i_Pos", 0}, GL_FLOAT, 3, 16, 0},
+        {{"i_Color", 1}, GL_UNSIGNED_BYTE, 4, 16, 12},
     };
     vao_ = glo::VAO::Create(vbo, layouts);
 
@@ -296,9 +295,10 @@ void CellGrid::SetCell(Cell cell, std::span<uint32_t> codepoints) {
 
   auto &v = cells_[index];
   v.glyph_index = (float)glyph_index;
-  v.color[0] = 1;
-  v.color[1] = 1;
-  v.color[2] = 1;
+  v.color[0] = 255;
+  v.color[1] = 255;
+  v.color[2] = 255;
+  v.color[3] = 255;
 }
 
 void CellGrid::Commit() { impl_->Commit(cells_); }

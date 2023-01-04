@@ -13,7 +13,8 @@ struct AttributeLocation {
 
 struct VertexLayout {
   AttributeLocation attribute;
-  // maybe float1, 2, 3, 4 and 16
+  // GL_FLOAT, GL_UNSIGNED_BYTE...etc
+  int gl_type;
   uint32_t item_count;
   uint32_t stride;
   uint32_t byte_offset;
