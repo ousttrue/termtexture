@@ -200,6 +200,8 @@ public:
     if (!font.Load(path, static_cast<float>(font_size))) {
       return false;
     }
+    atlas_.info = font.info;
+
     PLOG_INFO << path << std::endl;
 
     // make a most likely large enough bitmap, adjust to font type, number of
@@ -209,9 +211,13 @@ public:
     std::vector<uint8_t> atlas_bitmap(atlas_width * atlas_height);
     assert(atlas_bitmap.size());
 
-    const auto GLYPH_COUNT = 95;
-    atlas_.Pack(atlas_bitmap.data(), atlas_width, atlas_height, &font, 32,
-                GLYPH_COUNT);
+    GlyphPackRange ranges[] = {
+        {
+            .codepoint = 32,
+            .length = 95,
+        },
+    };
+    atlas_.Pack(atlas_bitmap.data(), atlas_width, atlas_height, &font, ranges);
 
     font_ = glo::Texture::Create(atlas_width, atlas_height, GL_RED,
                                  atlas_bitmap.data());
@@ -224,7 +230,7 @@ public:
     }
 
     // ubo_glyph
-    for (int i = 0; i < GLYPH_COUNT; ++i) {
+    for (int i = 0; i < atlas_.glyphs.size(); ++i) {
       auto &g = atlas_.glyphs[i];
       ubo_glyphs_.buffer.glyphs[i] = g;
     }

@@ -24,12 +24,17 @@ struct FontLoader {
   bool Load(std::string_view path, float fontsize);
 };
 
+struct GlyphPackRange {
+  uint32_t codepoint;
+  uint32_t length;
+};
+
 struct FontAtlas {
   std::vector<Glyph> glyphs;
   FontInfo info;
 
 public:
-  void Pack(uint8_t *atlas_bitmap, int atlas_width, int atlas_height,
-            const FontLoader *font, uint32_t codepoint, int count);
   size_t GlyphIndexFromCodePoint(std::span<const uint32_t> codepoints);
+  void Pack(uint8_t *atlas_bitmap, int atlas_width, int atlas_height,
+            const FontLoader *font, std::span<GlyphPackRange> ranges);
 };
