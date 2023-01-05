@@ -7,7 +7,7 @@
 #define STBTT_STATIC
 #include <stb_truetype.h>
 
-size_t FontAtlas::GlyphIndexFromCodePoint(std::span<uint32_t> codepoints) {
+size_t FontAtlas::GlyphIndexFromCodePoint(std::span<const uint32_t> codepoints) {
   if (codepoints.empty()) {
     return 0;
   }

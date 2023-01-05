@@ -59,16 +59,12 @@ public:
     if (!damaged.empty()) {
       for (auto &pos : damaged) {
         if (auto cell = vterm_->get_cell(pos)) {
-          int i = 0;
-          for (; i < VTERM_MAX_CHARS_PER_CELL && cell->chars[i]; ++i) {
-          }
-          std::span<uint32_t> span(cell->chars, i);
           grid_->SetCell(
               {
                   .row = (uint16_t)pos.row,
                   .col = (uint16_t)pos.col,
               },
-              span);
+              *cell);
         }
       }
       grid_->Commit();

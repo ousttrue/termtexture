@@ -19,7 +19,7 @@ struct FontAtlas {
   float descents = 0;
   float linegaps = 0;
 
-  size_t GlyphIndexFromCodePoint(std::span<uint32_t> codepoints);
+  size_t GlyphIndexFromCodePoint(std::span<const uint32_t> codepoints);
 
   // https://gist.github.com/vassvik/f442a4cc6127bc7967c583a12b148ac9
   const std::vector<uint8_t> &LoadFont(std::string_view path, float font_size,

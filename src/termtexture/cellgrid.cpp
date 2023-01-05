@@ -1,5 +1,6 @@
 #include "cellgrid.h"
 #include "fontatlas.h"
+#include "vterm.h"
 #include <chrono>
 #include <gl/glew.h>
 #include <glo/scoped_binder.h>
@@ -278,26 +279,29 @@ void CellGrid::Clear() {
   cells_.clear();
 }
 
-void CellGrid::SetCell(Cell cell, std::span<uint32_t> codepoints) {
-  auto glyph_index = impl_->atlas_.GlyphIndexFromCodePoint(codepoints);
-  auto found = cellMap_.find(cell);
+void CellGrid::SetCell(CellPos pos, const VTermScreenCell &cell) {
+  size_t i = 0;
+  for (; i < VTERM_MAX_CHARS_PER_CELL && cell.chars[i]; ++i) {
+  }
+  auto glyph_index = impl_->atlas_.GlyphIndexFromCodePoint({cell.chars, i});
+  auto found = cellMap_.find(pos);
   size_t index;
   if (found != cellMap_.end()) {
     index = found->second;
   } else {
     index = cells_.size();
     cells_.push_back({
-        .col = (float)cell.col,
-        .row = (float)cell.row,
+        .col = (float)pos.col,
+        .row = (float)pos.row,
     });
-    cellMap_.insert(std::make_pair(cell, index));
+    cellMap_.insert(std::make_pair(pos, index));
   }
 
   auto &v = cells_[index];
   v.glyph_index = (float)glyph_index;
-  v.color[0] = 255;
-  v.color[1] = 255;
-  v.color[2] = 255;
+  v.color[0] = cell.fg.rgb.red;
+  v.color[1] = cell.fg.rgb.green;
+  v.color[2] = cell.fg.rgb.blue;
   v.color[3] = 255;
 }
 
