@@ -19,11 +19,16 @@
 auto vs_src = R"(#version 420
 in vec3 i_Pos;
 in vec4 i_Color;
-out vData { vec4 color; }
+in vec4 i_BgColor;
+out vData { 
+  vec4 color; 
+  vec4 bgColor;
+}
 vertex;
 void main() {
   gl_Position = vec4(i_Pos, 1);
   vertex.color = i_Color;
+  vertex.bgColor = i_BgColor;
 }
 )";
 
@@ -48,7 +53,10 @@ struct Glyph {
 
 layout(std140, binding = 1) uniform Glyphs { Glyph glyphs[128]; };
 
-in vData { vec4 color; }
+in vData { 
+  vec4 color; 
+  vec4 bgColor;
+}
 vertices[];
 out vec2 g_TexCoords;
 out vec4 g_Color;
@@ -178,8 +186,9 @@ public:
     // vertex buffer
     auto vbo = glo::VBO::Create();
     glo::VertexLayout layouts[] = {
-        {{"i_Pos", 0}, GL_FLOAT, 3, 16, 0},
-        {{"i_Color", 1}, GL_UNSIGNED_BYTE, 4, 16, 12},
+        {{"i_Pos", 0}, GL_FLOAT, 3, 20, 0},
+        {{"i_Color", 1}, GL_UNSIGNED_BYTE, 4, 20, 12},
+        {{"i_BgColor", 2}, GL_UNSIGNED_BYTE, 4, 20, 16},
     };
     vao_ = glo::VAO::Create(vbo, layouts);
 
@@ -299,10 +308,14 @@ void CellGrid::SetCell(CellPos pos, const VTermScreenCell &cell) {
 
   auto &v = cells_[index];
   v.glyph_index = (float)glyph_index;
-  v.color[0] = cell.fg.rgb.red;
-  v.color[1] = cell.fg.rgb.green;
-  v.color[2] = cell.fg.rgb.blue;
-  v.color[3] = 255;
+  v.fg_color[0] = cell.fg.rgb.red;
+  v.fg_color[1] = cell.fg.rgb.green;
+  v.fg_color[2] = cell.fg.rgb.blue;
+  v.fg_color[3] = 255;
+  v.bg_color[0] = cell.bg.rgb.red;
+  v.bg_color[1] = cell.bg.rgb.green;
+  v.bg_color[2] = cell.bg.rgb.blue;
+  v.bg_color[3] = 255;
 }
 
 void CellGrid::Commit() { impl_->Commit(cells_); }
