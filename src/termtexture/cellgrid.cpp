@@ -196,13 +196,25 @@ public:
   }
 
   bool LoadFont(std::string_view path, int font_size, uint32_t atlas_size) {
-    auto &bitmap =
-        atlas_.LoadFont(path, static_cast<float>(font_size), atlas_size);
-    if (bitmap.empty()) {
+    FontLoader font;
+    if (!font.Load(path, static_cast<float>(font_size))) {
       return false;
     }
+    PLOG_INFO << path << std::endl;
 
-    font_ = glo::Texture::Create(atlas_size, atlas_size, GL_RED, bitmap.data());
+    // make a most likely large enough bitmap, adjust to font type, number of
+    // sizes and glyphs and oversampling
+    auto atlas_width = atlas_size;
+    auto atlas_height = atlas_size;
+    std::vector<uint8_t> atlas_bitmap(atlas_width * atlas_height);
+    assert(atlas_bitmap.size());
+
+    const auto GLYPH_COUNT = 95;
+    atlas_.Pack(atlas_bitmap.data(), atlas_width, atlas_height, &font, 32,
+                GLYPH_COUNT);
+
+    font_ = glo::Texture::Create(atlas_width, atlas_height, GL_RED,
+                                 atlas_bitmap.data());
     auto label = "atlas";
     if ((__GLEW_EXT_debug_label)) {
       glLabelObjectEXT(GL_TEXTURE, font_->Handle(), 0, label);
@@ -219,10 +231,10 @@ public:
     ubo_glyphs_.Upload();
 
     // ubo_global
-    ubo_global_.buffer.atlasSize[0] = (float)atlas_size;
-    ubo_global_.buffer.atlasSize[1] = (float)atlas_size;
-    ubo_global_.buffer.ascent = atlas_.ascents;
-    ubo_global_.buffer.descent = atlas_.descents;
+    ubo_global_.buffer.atlasSize[0] = (float)atlas_width;
+    ubo_global_.buffer.atlasSize[1] = (float)atlas_height;
+    ubo_global_.buffer.ascent = atlas_.info.ascents;
+    ubo_global_.buffer.descent = atlas_.info.descents;
 
     return true;
   }
