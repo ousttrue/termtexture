@@ -14,8 +14,8 @@ struct GlyphRect {
 };
 
 struct GlyphOffset {
-  float left;
-  float bottom;
+  float xoff;
+  float yoff;
   float doublewidth;
   float expand;
 };

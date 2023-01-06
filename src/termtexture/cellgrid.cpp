@@ -75,7 +75,7 @@ vec2 pixelToUv(float x, float y) {
 // -1-1 +1-1
 void main() {
   vec2 cellSize = global.cellSize;
-  vec2 topLeft = gl_in[0].gl_Position.xy * cellSize + vec2(0, global.ascent);
+  vec2 topLeft = gl_in[0].gl_Position.xy * cellSize; // + vec2(0, global.ascent);
   int glyphIndex = int(gl_in[0].gl_Position.z);
   Glyph glyph = glyphs[glyphIndex];
   float l = glyph.xywh.x;
@@ -85,11 +85,12 @@ void main() {
   bool expand = glyph.offset.w != 0;
   float w = expand ? cellSize.x : r - l;
   float h = expand ? cellSize.y : b - t;
+  vec2 glyph_offset = expand ? vec2(0, 0) : vec2(glyph.offset.x, glyph.offset.y + global.ascent);
 
-  vec4 cell_0 = vec4(topLeft + glyph.offset.xy, 0, 1);
-  vec4 cell_1 = vec4(topLeft + glyph.offset.xy + vec2(0, h), 0.0, 1);
-  vec4 cell_2 = vec4(topLeft + glyph.offset.xy + vec2(w, 0), 0.0, 1);
-  vec4 cell_3 = vec4(topLeft + glyph.offset.xy + vec2(w, h), 0.0, 1);
+  vec4 cell_0 = vec4(topLeft + glyph_offset, 0, 1);
+  vec4 cell_1 = vec4(topLeft + glyph_offset + vec2(0, h), 0.0, 1);
+  vec4 cell_2 = vec4(topLeft + glyph_offset + vec2(w, 0), 0.0, 1);
+  vec4 cell_3 = vec4(topLeft + glyph_offset + vec2(w, h), 0.0, 1);
 
   // 0
   gl_Position = global.projection * cell_0;
@@ -217,10 +218,10 @@ public:
     assert(atlas_bitmap.size());
 
     GlyphPackRange ranges[] = {
-        // {
-        //     .codepoint = 0x20, // space
-        //     .length = 1,
-        // },
+        {
+            .codepoint = 0x20, // space
+            .length = 1,
+        },
         {
             .codepoint = 0x25A0, // black square
             .length = 1,
@@ -231,7 +232,7 @@ public:
         },
     };
     atlas_.Pack(atlas_bitmap.data(), atlas_width, atlas_height, &font, ranges);
-    // atlas_.glyphs[0].offset.expand = 1;
+    atlas_.glyphs[0].offset.expand = 1;
 
     font_ = glo::Texture::Create(atlas_width, atlas_height, GL_RED,
                                  atlas_bitmap.data());

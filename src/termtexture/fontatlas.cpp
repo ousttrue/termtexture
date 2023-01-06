@@ -83,7 +83,7 @@ void FontAtlas::Pack(uint8_t *atlas_bitmap, int atlas_width, int atlas_height,
           .xywh = {(float)g.x0, (float)g.y0, (float)g.x1, (float)g.y1},
           .offset =
               {
-                  .left = (float)g.xoff, .bottom = (float)g.yoff,
+                  .xoff = (float)g.xoff, .yoff = (float)g.yoff,
                   // (float)g.xoff2,
                   // (float)g.yoff2
               },
