@@ -34,7 +34,7 @@ void main() {
 
 auto gs_src = R"(#version 420 core
 layout(points) in;
-layout(triangle_strip, max_vertices = 4) out;
+layout(triangle_strip, max_vertices = 10) out;
 
 layout(std140, binding = 0) uniform Global {
   mat4 projection;
@@ -75,22 +75,65 @@ vec2 pixelToUv(float x, float y) {
 // -1-1 +1-1
 void main() {
   vec2 cellSize = global.cellSize;
-  vec2 topLeft = gl_in[0].gl_Position.xy * cellSize; // + vec2(0, global.ascent);
+  vec2 topLeft = gl_in[0].gl_Position.xy * cellSize;
   int glyphIndex = int(gl_in[0].gl_Position.z);
   Glyph glyph = glyphs[glyphIndex];
   float l = glyph.xywh.x;
   float t = glyph.xywh.y;
   float r = glyph.xywh.z;
   float b = glyph.xywh.w;
-  bool expand = glyph.offset.w != 0;
-  float w = expand ? cellSize.x : r - l;
-  float h = expand ? cellSize.y : b - t;
-  vec2 glyph_offset = expand ? vec2(0, 0) : vec2(glyph.offset.x, glyph.offset.y + global.ascent);
 
-  vec4 cell_0 = vec4(topLeft + glyph_offset, 0, 1);
-  vec4 cell_1 = vec4(topLeft + glyph_offset + vec2(0, h), 0.0, 1);
-  vec4 cell_2 = vec4(topLeft + glyph_offset + vec2(w, 0), 0.0, 1);
-  vec4 cell_3 = vec4(topLeft + glyph_offset + vec2(w, h), 0.0, 1);
+  float w = r - l;
+  float h = b - t;
+  vec2 glyph_offset = vec2(glyph.offset.x, glyph.offset.y + global.ascent);
+  vec4 cell_0 = vec4(topLeft + glyph_offset + vec2(0, 0), 0, 1);
+  vec4 cell_1 = vec4(topLeft + glyph_offset + vec2(0, h), 0, 1);
+  vec4 cell_2 = vec4(topLeft + glyph_offset + vec2(w, 0), 0, 1);
+  vec4 cell_3 = vec4(topLeft + glyph_offset + vec2(w, h), 0, 1);
+
+  vec4 expand_0 = vec4(topLeft + vec2(0, 0), -0.1, 1);
+  vec4 expand_1 = vec4(topLeft + vec2(0, cellSize.y), -0.1, 1);
+  vec4 expand_2 = vec4(topLeft + vec2(cellSize.x, 0), -0.1, 1);
+  vec4 expand_3 = vec4(topLeft + vec2(cellSize.x, cellSize.y), -0.1, 1);
+
+  //
+  Glyph fill_glyph = glyphs[1];
+  float fl = fill_glyph.xywh.x+2;
+  float ft = fill_glyph.xywh.y+2;
+  float fr = fill_glyph.xywh.z-2;
+  float fb = fill_glyph.xywh.w-2;
+
+  // 0
+  gl_Position = global.projection * expand_0;
+  g_TexCoords = pixelToUv(fl, ft);
+  g_Color = vertices[0].bgColor;
+  EmitVertex();
+
+  // 1
+  gl_Position = global.projection * expand_1;
+  g_TexCoords = pixelToUv(fl, fb);
+  g_Color = vertices[0].bgColor;
+  EmitVertex();
+
+  // 2
+  gl_Position = global.projection * expand_2;
+  g_TexCoords = pixelToUv(fr, ft);
+  g_Color = vertices[0].bgColor;
+  EmitVertex();
+
+  // 3
+  gl_Position = global.projection * expand_3;
+  g_TexCoords = pixelToUv(fr, fb);
+  g_Color = vertices[0].bgColor;
+  EmitVertex();
+
+  // 3 dummy
+  gl_Position = global.projection * expand_3;
+  EmitVertex();
+
+  // 0 dummy
+  gl_Position = global.projection * cell_0;
+  EmitVertex();
 
   // 0
   gl_Position = global.projection * cell_0;

@@ -8,10 +8,11 @@ namespace termtexture {
 
 class TermTextureImpl {
   std::shared_ptr<CellGrid> grid_;
-  int cell_width_;
-  int cell_height_;
+  int cell_width_ = 0;
+  int cell_height_ = 0;
   int rows_ = 24;
   int cols_ = 80;
+  std::string lazy_launch_;
 
 public:
   common_pty::Pty pty_;
@@ -32,7 +33,7 @@ public:
     return grid_->Load(fontfile, cell_height, 1024);
   }
 
-  void Launch(const char *cmd) { pty_.Launch(rows_, cols_, cmd); }
+  void Launch(const char *cmd) { lazy_launch_ = cmd; }
 
   void Render(int width, int height, std::chrono::nanoseconds duration) {
 
@@ -42,6 +43,10 @@ public:
       // resize
       rows_ = rows;
       cols_ = cols;
+      if (!lazy_launch_.empty()) {
+        pty_.Launch(rows_, cols_, lazy_launch_.c_str());
+        lazy_launch_ = {};
+      }
       pty_.NotifyTermSize(rows, cols);
       vterm_->resize_rows_cols(rows, cols);
       grid_->Clear();
