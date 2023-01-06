@@ -3,11 +3,26 @@
 #include <span>
 #include <stdint.h>
 #include <string_view>
+#include <unordered_map>
 #include <vector>
 
+struct GlyphRect {
+  float x;
+  float y;
+  float w;
+  float h;
+};
+
+struct GlyphOffset {
+  float left;
+  float bottom;
+  float doublewidth;
+  float expand;
+};
+
 struct Glyph {
-  float xywh[4];
-  float offset[4];
+  GlyphRect xywh;
+  GlyphOffset offset;
 };
 
 struct FontInfo {
@@ -32,6 +47,7 @@ struct GlyphPackRange {
 struct FontAtlas {
   std::vector<Glyph> glyphs;
   FontInfo info;
+  std::unordered_map<uint32_t, size_t> codepoint_map;
 
 public:
   size_t GlyphIndexFromCodePoint(std::span<const uint32_t> codepoints);

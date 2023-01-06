@@ -43,10 +43,11 @@ FontAtlas::GlyphIndexFromCodePoint(std::span<const uint32_t> codepoints) {
     return 0;
   }
   auto codepoint = codepoints[0];
-  if (codepoint < 32) {
+  auto found = codepoint_map.find(codepoint);
+  if (found == codepoint_map.end()) {
     return 0;
   }
-  return codepoint - 32;
+  return found->second;
 }
 
 void FontAtlas::Pack(uint8_t *atlas_bitmap, int atlas_width, int atlas_height,
@@ -75,14 +76,21 @@ void FontAtlas::Pack(uint8_t *atlas_bitmap, int atlas_width, int atlas_height,
   stbtt_PackEnd(&pc);
 
   for (auto &stb_range : stb_ranges) {
-    for (auto &g :
-         std::span{stb_range.chardata_for_range, (size_t)stb_range.num_chars}) {
-      // auto &g = packed[i];
+    for (size_t i = 0; i < stb_range.num_chars; ++i) {
+      auto &g = stb_range.chardata_for_range[i];
+      auto index = glyphs.size();
       glyphs.push_back({
           .xywh = {(float)g.x0, (float)g.y0, (float)g.x1, (float)g.y1},
-          .offset = {(float)g.xoff, (float)g.yoff, (float)g.xoff2,
-                     (float)g.yoff2},
+          .offset =
+              {
+                  .left = (float)g.xoff, .bottom = (float)g.yoff,
+                  // (float)g.xoff2,
+                  // (float)g.yoff2
+              },
       });
+      codepoint_map.insert(std::make_pair(
+          static_cast<uint32_t>(stb_range.first_unicode_codepoint_in_range + i),
+          index));
     }
   }
 }

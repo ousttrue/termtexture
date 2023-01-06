@@ -82,30 +82,35 @@ void main() {
   float t = glyph.xywh.y;
   float r = glyph.xywh.z;
   float b = glyph.xywh.w;
+  bool expand = glyph.offset.w != 0;
+  float w = expand ? cellSize.x : r - l;
+  float h = expand ? cellSize.y : b - t;
+
+  vec4 cell_0 = vec4(topLeft + glyph.offset.xy, 0, 1);
+  vec4 cell_1 = vec4(topLeft + glyph.offset.xy + vec2(0, h), 0.0, 1);
+  vec4 cell_2 = vec4(topLeft + glyph.offset.xy + vec2(w, 0), 0.0, 1);
+  vec4 cell_3 = vec4(topLeft + glyph.offset.xy + vec2(w, h), 0.0, 1);
 
   // 0
-  gl_Position = global.projection * vec4(topLeft + glyph.offset.xy, 0, 1);
+  gl_Position = global.projection * cell_0;
   g_TexCoords = pixelToUv(l, t);
   g_Color = vertices[0].color;
   EmitVertex();
 
   // 1
-  gl_Position = global.projection *
-                vec4(topLeft + glyph.offset.xy + vec2(0, b - t), 0.0, 1);
+  gl_Position = global.projection * cell_1;
   g_TexCoords = pixelToUv(l, b);
   g_Color = vertices[0].color;
   EmitVertex();
 
   // 2
-  gl_Position = global.projection *
-                vec4(topLeft + glyph.offset.xy + vec2(r - l, 0), 0.0, 1);
+  gl_Position = global.projection * cell_2;
   g_TexCoords = pixelToUv(r, t);
   g_Color = vertices[0].color;
   EmitVertex();
 
   // 3
-  gl_Position = global.projection *
-                vec4(topLeft + glyph.offset.xy + vec2(r - l, b - t), 0.0, 1);
+  gl_Position = global.projection * cell_3;
   g_TexCoords = pixelToUv(r, b);
   g_Color = vertices[0].color;
   EmitVertex();
@@ -212,12 +217,21 @@ public:
     assert(atlas_bitmap.size());
 
     GlyphPackRange ranges[] = {
+        // {
+        //     .codepoint = 0x20, // space
+        //     .length = 1,
+        // },
         {
-            .codepoint = 32,
+            .codepoint = 0x25A0, // black square
+            .length = 1,
+        },
+        {
+            .codepoint = 33,
             .length = 95,
         },
     };
     atlas_.Pack(atlas_bitmap.data(), atlas_width, atlas_height, &font, ranges);
+    // atlas_.glyphs[0].offset.expand = 1;
 
     font_ = glo::Texture::Create(atlas_width, atlas_height, GL_RED,
                                  atlas_bitmap.data());
