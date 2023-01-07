@@ -246,16 +246,18 @@ int main(int argc, char **argv) {
   }
   glfwSetWindowUserPointer(window_handle, term.get());
 
-  auto cmd = "cmd.exe";
-  if (!term->Launch(cmd)) {
-    PLOG_ERROR << "Launch: " << cmd;
-    return 3;
+  {
+    auto [width, height] = window.FrameBufferSize();
+    auto cmd = "cmd.exe";
+    if (!term->Launch(cmd, term->TermSizeFromTextureSize(width, height))) {
+      PLOG_ERROR << "Launch: " << cmd;
+      return 3;
+    }
   }
 
   float clear_color[] = {0, 0, 0, 0};
   while (auto time = window.BeginFrame(clear_color)) {
-    if(term->IsClosed())
-    {
+    if (term->IsClosed()) {
       break;
     }
     auto [width, height] = window.FrameBufferSize();

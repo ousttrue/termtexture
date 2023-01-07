@@ -21,4 +21,13 @@ public:
   void BindBase(int binding);
 };
 
+template <typename T> struct TypedUBO {
+  std::shared_ptr<UBO> ubo;
+  T buffer;
+
+  void Initialize() { ubo = UBO::Create(); }
+  void Upload() { ubo->Upload(buffer); }
+  uint32_t Handle() { return ubo->Handle(); }
+};
+
 } // namespace glo
