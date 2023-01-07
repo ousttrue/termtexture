@@ -196,12 +196,12 @@ struct Global {
   float ascent;
   float descent;
 
-  void UpdateProjection(int width, int height, PixelSize cell_size) {
+  void UpdateProjection(PixelSize screen_size, PixelSize cell_size) {
     auto m = projection;
-    m[0] = 2.0 / width;
-    m[5] = -(2.0 / height);
-    m[12] = -1 - cell_size.width / width * 2;
-    m[13] = 1 + cell_size.height / height * 2;
+    m[0] = 2.0 / screen_size.width;
+    m[5] = -(2.0 / screen_size.height);
+    m[12] = -1 - cell_size.width / screen_size.width * 2;
+    m[13] = 1 + cell_size.height / screen_size.height * 2;
   }
 };
 
@@ -235,9 +235,9 @@ public:
     return true;
   }
 
-  bool LoadFont(std::string_view path, int font_size, uint32_t atlas_size) {
+  bool LoadFont(std::string_view path, PixelSize cell_size, uint32_t atlas_size) {
     FontLoader font;
-    if (!font.Load(path, static_cast<float>(font_size))) {
+    if (!font.Load(path, static_cast<float>(cell_size.height))) {
       return false;
     }
     atlas_.info = font.info;
@@ -298,7 +298,7 @@ public:
     vao_->GetVBO()->DataFromSpan(cells, true);
   }
 
-  void Render(int width, int height, std::chrono::nanoseconds duration,
+  void Render(PixelSize screen_size, std::chrono::nanoseconds duration,
               PixelSize cell_size, int draw_count) {
     if (!font_) {
       return;
@@ -308,9 +308,9 @@ public:
       // ubo_global
       ubo_global_.buffer.cellSize[0] = (float)cell_size.width;
       ubo_global_.buffer.cellSize[1] = (float)cell_size.height;
-      ubo_global_.buffer.screenSize[0] = (float)width;
-      ubo_global_.buffer.screenSize[1] = (float)height;
-      ubo_global_.buffer.UpdateProjection(width, height, cell_size);
+      ubo_global_.buffer.screenSize[0] = (float)screen_size.width;
+      ubo_global_.buffer.screenSize[1] = (float)screen_size.height;
+      ubo_global_.buffer.UpdateProjection(screen_size, cell_size);
       ubo_global_.Upload();
     }
 
@@ -339,14 +339,14 @@ std::shared_ptr<CellGrid> CellGrid::Create() {
   return std::shared_ptr<CellGrid>(new CellGrid);
 }
 
-bool CellGrid::Load(std::string_view path, int font_size, uint32_t atlas_size) {
+bool CellGrid::Load(std::string_view path, PixelSize cell_size, uint32_t atlas_size) {
   if (!impl_->Initialize()) {
     return false;
   }
 
-  cell_size_ = PixelSize::CellSizeFromFontHeight(font_size);
+  cell_size_ = cell_size;
 
-  return impl_->LoadFont(path, font_size, atlas_size);
+  return impl_->LoadFont(path, cell_size, atlas_size);
 }
 
 void CellGrid::Clear() {
@@ -386,7 +386,7 @@ void CellGrid::SetCell(CellPos pos, const VTermScreenCell &cell) {
 
 void CellGrid::Commit() { impl_->Commit(cells_); }
 
-void CellGrid::Render(int width, int height,
+void CellGrid::Render(PixelSize screen_size,
                       std::chrono::nanoseconds duration) {
-  impl_->Render(width, height, duration, cell_size_, cells_.size());
+  impl_->Render(screen_size, duration, cell_size_, cells_.size());
 }

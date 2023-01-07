@@ -131,9 +131,9 @@ bool Gui::Initialize(GLFWwindow *window, std::string_view glsl_version,
 
   {
     auto term = termtexture::TermTexture::Create();
-    int cell_width = 15;
-    int cell_height = 30;
-    if (!term->LoadFont(fontfile, cell_width, cell_height)) {
+    uint16_t cell_width = 15;
+    uint16_t cell_height = 30;
+    if (!term->LoadFont(fontfile, {cell_width, cell_height})) {
       PLOG_ERROR << "LoadFont: " << fontfile;
       return false;
     }

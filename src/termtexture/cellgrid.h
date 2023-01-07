@@ -16,6 +16,9 @@ struct CellVertex {
   uint8_t bg_color[4];
 };
 
+/// Windows, Texture, Screen: PixelSize
+/// Term: TermSize(rows, cols)
+/// Cell: CellSize(rows, cols)
 class CellGrid {
   PixelSize cell_size_ = {
       .width = 8,
@@ -33,10 +36,11 @@ public:
   static std::shared_ptr<CellGrid> Create();
   CellGrid(const CellGrid &) = delete;
   CellGrid &operator=(const CellGrid &) = delete;
-  bool Load(std::string_view path, int font_size, uint32_t atlas_size);
+  PixelSize CellSize() const { return cell_size_; }
+  bool Load(std::string_view path, PixelSize cell_size, uint32_t atlas_size);
   void Clear();
   void SetCell(CellPos pos, const VTermScreenCell &cell);
   void PushText(const std::u32string &unicodes);
   void Commit();
-  void Render(int width, int height, std::chrono::nanoseconds duration);
+  void Render(PixelSize screen_size, std::chrono::nanoseconds duration);
 };

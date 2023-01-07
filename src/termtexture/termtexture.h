@@ -1,5 +1,6 @@
 #pragma once
 
+#include "celltypes.h"
 #include <chrono>
 #include <memory>
 #include <string_view>
@@ -25,7 +26,7 @@ public:
   TermTexture &operator=(const TermTexture &) = delete;
   static std::shared_ptr<TermTexture> Create();
   TermSize TermSizeFromTextureSize(int width, int height) const;
-  bool LoadFont(std::string_view fontfile, int cell_width, int cell_height);
+  bool LoadFont(std::string_view fontfile, PixelSize cell_size);
   bool Launch(const char *cmd, TermSize size = {.rows = 24, .cols = 80});
   void Render(int width, int height, std::chrono::nanoseconds duration);
   void KeyboardUnichar(char c, VTermModifier mod);

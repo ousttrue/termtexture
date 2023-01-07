@@ -1,6 +1,8 @@
 #include "termtexture.h"
 #include "cellgrid.h"
+#include "celltypes.h"
 #include "common_pty.h"
+#include "cursor.h"
 #include "vterm_object.h"
 #include <memory>
 
@@ -8,12 +10,15 @@ namespace termtexture {
 
 class TermTextureImpl {
   std::shared_ptr<CellGrid> grid_;
-  int cell_width_ = 0;
-  int cell_height_ = 0;
+  PixelSize cell_size_ = {
+      0,
+      0,
+  };
   TermSize size_ = {
       .rows = 24,
       .cols = 80,
   };
+  std::shared_ptr<Cursor> cursor_;
 
 public:
   common_pty::Pty pty_;
@@ -26,16 +31,17 @@ public:
           ((common_pty::Pty *)user)->Write(s, len);
         },
         &pty_));
+    cursor_ = Cursor::Create();
   }
 
-  TermSize TermSizeFromTextureSize(int width, int height) const {
-    auto cols = std::max(1, width / cell_width_);
-    auto rows = std::max(1, height / cell_height_);
+  TermSize TermSizeFromTextureSize(PixelSize screen_size) const {
+    auto cols = std::max(1, screen_size.width / cell_size_.width);
+    auto rows = std::max(1, screen_size.height / cell_size_.height);
     return {.rows = rows, .cols = cols};
   }
 
-  void UpdateTextureSize(int width, int height) {
-    auto size = TermSizeFromTextureSize(width, height);
+  void UpdateTextureSize(PixelSize screen_size) {
+    auto size = TermSizeFromTextureSize(screen_size);
     if (size == size_) {
       return;
     }
@@ -46,10 +52,9 @@ public:
     grid_->Clear();
   }
 
-  bool LoadFont(std::string_view fontfile, int cell_width, int cell_height) {
-    cell_width_ = cell_width;
-    cell_height_ = cell_height;
-    return grid_->Load(fontfile, cell_height, 1024);
+  bool LoadFont(std::string_view fontfile, PixelSize cell_size) {
+    cell_size_ = cell_size;
+    return grid_->Load(fontfile, cell_size, 1024);
   }
 
   void Launch(TermSize size, const char *cmd) {
@@ -58,9 +63,9 @@ public:
     pty_.Launch(size_.rows, size_.cols, cmd);
   }
 
-  void Render(int width, int height, std::chrono::nanoseconds duration) {
+  void Render(PixelSize size, std::chrono::nanoseconds duration) {
 
-    UpdateTextureSize(width, height);
+    UpdateTextureSize(size);
 
     // pty to vterm
     auto input = pty_.Read();
@@ -85,10 +90,10 @@ public:
       grid_->Commit();
     }
 
-    grid_->Render(width, height, duration);
+    grid_->Render(size, duration);
 
     if (auto cursor = vterm_->get_cursor()) {
-      // cursor_->Render(cursor);
+      cursor_->Render(cursor.value(), size, grid_->CellSize());
     }
   }
 };
@@ -102,12 +107,14 @@ std::shared_ptr<TermTexture> TermTexture::Create() {
 }
 
 TermSize TermTexture::TermSizeFromTextureSize(int width, int height) const {
-  return impl_->TermSizeFromTextureSize(width, height);
+  return impl_->TermSizeFromTextureSize({
+      .width = static_cast<uint16_t>(width),
+      .height = static_cast<uint16_t>(height),
+  });
 }
 
-bool TermTexture::LoadFont(std::string_view fontfile, int cell_width,
-                           int cell_height) {
-  return impl_->LoadFont(fontfile, cell_width, cell_height);
+bool TermTexture::LoadFont(std::string_view fontfile, PixelSize cell_size) {
+  return impl_->LoadFont(fontfile, cell_size);
 }
 
 bool TermTexture::Launch(const char *cmd, TermSize size) {
@@ -117,7 +124,12 @@ bool TermTexture::Launch(const char *cmd, TermSize size) {
 
 void TermTexture::Render(int width, int height,
                          std::chrono::nanoseconds duration) {
-  impl_->Render(width, height, duration);
+  impl_->Render(
+      {
+          .width = static_cast<uint16_t>(width),
+          .height = static_cast<uint16_t>(height),
+      },
+      duration);
 }
 
 void TermTexture::KeyboardUnichar(char c, VTermModifier mod) {
