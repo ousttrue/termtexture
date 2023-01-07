@@ -39,6 +39,10 @@ std::shared_ptr<Drawable> Drawable::Create(const ShaderSources &src,
   vbo->SetData(vertices_size, vertices);
 
   auto vao = VAO::Create(vbo, layouts);
+  if(!vao)
+  {
+    return nullptr;
+  }
 
   return std::shared_ptr<Drawable>(new Drawable(shader, vao));
 }

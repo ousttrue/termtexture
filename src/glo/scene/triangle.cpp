@@ -1,4 +1,5 @@
 #include "glo/scene/drawable.h"
+#include <gl/glew.h>
 
 struct Vertex {
   float x, y;
@@ -39,8 +40,8 @@ std::shared_ptr<Drawable> CreateTriangle() {
   // float x, y;
   // float r, g, b;
   VertexLayout layouts[] = {
-      {{"vPos", 0}, 2, 20, 0},
-      {{"vCol", 1}, 3, 20, 8},
+      {{"vPos", 0}, GL_FLOAT, 2, 20, 0},
+      {{"vCol", 1}, GL_FLOAT, 3, 20, 8},
   };
   return Drawable::Create(
       {
