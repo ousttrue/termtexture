@@ -1,3 +1,4 @@
+#include "celltypes.h"
 #include "vterm.h"
 #include <chrono>
 #include <memory>
@@ -6,18 +7,6 @@
 #include <string>
 #include <string_view>
 #include <unordered_map>
-
-struct CellPos {
-  uint16_t row;
-  uint16_t col;
-
-  size_t value() const { return *((uint32_t *)this); }
-  bool operator==(const CellPos &rhs) const { return value() == rhs.value(); }
-};
-
-template <> struct std::hash<CellPos> {
-  std::size_t operator()(const CellPos &p) const noexcept { return p.value(); }
-};
 
 struct CellVertex {
   float col;
@@ -28,8 +17,10 @@ struct CellVertex {
 };
 
 class CellGrid {
-  int cell_width_ = 16;
-  int cell_height_ = 16;
+  PixelSize cell_size_ = {
+      .width = 8,
+      .height = 16,
+  };
   std::vector<CellVertex> cells_;
   std::unordered_map<CellPos, size_t, std::hash<CellPos>> cellMap_;
   class TextImpl *impl_ = nullptr;
