@@ -46,7 +46,7 @@ public:
       return;
     }
     // resize
-    size = size_;
+    size_ = size;
     pty_.NotifyTermSize(size_.rows, size_.cols);
     vterm_->resize_rows_cols(size_.rows, size_.cols);
     grid_->Clear();
